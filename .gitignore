@@ -44,3 +44,12 @@ board_data/**/state*.txt
 board_data/**/after-state*.txt
 board_data/**/eval-state*.txt
 board_data/**/eval-after-state*.txt
+
+# large archives / exports
+*.tgz
+*.tar.gz
+*.zip
+*.7z
+
+# training outputs (large logs)
+training/mini2048_outputs/
