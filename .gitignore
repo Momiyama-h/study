@@ -53,3 +53,4 @@ board_data/**/eval-after-state*.txt
 
 # training outputs (large logs)
 training/mini2048_outputs/
+training/mini2048_outputs/
