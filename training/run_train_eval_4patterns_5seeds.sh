@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-BASE_MINI="/HDD/momiyama2"
-BASE_NT="/HDD/momiyama2/Mini-2048-data-processing-main/NT"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+BASE_MINI="${BASE_MINI:-$REPO_ROOT/training}"
+BASE_NT="${BASE_NT:-$REPO_ROOT/Mini-2048-data-processing-main/NT}"
 DAT_ROOT="${DAT_ROOT:-/HDD/momiyama2/data/study/ntuple_dat}"
 LOG_ROOT="${LOG_ROOT:-/HDD/momiyama2/data/study/training_logs}"
 BOARD_DATA_PARENT="${BOARD_DATA_PARENT:-${BASE_NT}/../board_data}"
