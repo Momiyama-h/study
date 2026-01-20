@@ -1,3 +1,4 @@
+import json
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -8,12 +9,21 @@ BASE_DIR = Path(__file__).resolve().parent
 board_dir = BASE_DIR.parent / "board_data"
 
 
+def make_safe_name(rel_path: Path) -> str:
+    safe = str(rel_path).replace("\\", "/").strip("/")
+    return safe.replace("/", "__")
+
+
 class PlayerData:
     def __init__(self, target_dir: Path, config: dict):
-        self.name = target_dir.name
+        self.rel_path = target_dir.relative_to(board_dir)
+        self.safe_name = make_safe_name(self.rel_path)
+        self.name = self.safe_name
         self.target_dir = target_dir
         self.pp_dir = board_dir / "PP"
         self.config = config[self.name] if config and self.name in config else {}
+        self._meta_loaded = False
+        self._meta_cache = None
 
     @property
     def state_file(self):
@@ -42,6 +52,15 @@ class PlayerData:
         if not pp.exists():
             raise FileNotFoundError(f"{pp}が存在しません。")
         return pp
+
+    @property
+    def meta(self):
+        if not self._meta_loaded:
+            self._meta_loaded = True
+            meta_path = self.target_dir / "meta.json"
+            if meta_path.exists():
+                self._meta_cache = json.loads(meta_path.read_text("utf-8"))
+        return self._meta_cache
 
 
 @dataclass

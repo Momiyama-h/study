@@ -3,7 +3,8 @@ set -euo pipefail
 
 BASE_MINI="/HDD/momiyama2"
 BASE_NT="/HDD/momiyama2/Mini-2048-data-processing-main/NT"
-OUTPUT_ROOT="${OUTPUT_ROOT:-/HDD/momiyama2/mini2048_outputs}"
+DAT_ROOT="${DAT_ROOT:-/HDD/momiyama2/data/study/ntuple_dat}"
+LOG_ROOT="${LOG_ROOT:-/HDD/momiyama2/data/study/training_logs}"
 BOARD_DATA_PARENT="${BOARD_DATA_PARENT:-${BASE_NT}/../board_data}"
 
 SEEDS=(10 11 12 13 14)
@@ -48,11 +49,11 @@ run_one() {
   local prefix="$4"
   local seed="$5"
 
-   mkdir -p "$OUTPUT_ROOT"
-  local log_file="${OUTPUT_ROOT}/log_${tuple}tuple_${symmetry}_seed${seed}_${RUN_TS}.txt"
+  mkdir -p "$DAT_ROOT" "$LOG_ROOT"
+  local log_file="${LOG_ROOT}/log_${tuple}tuple_${symmetry}_seed${seed}_${RUN_TS}.txt"
   echo "== Train: ${tuple}${symmetry} seed=${seed} ==" | tee "$log_file"
-  ( cd "$OUTPUT_ROOT" && "$train_bin" "$seed" ) 2>&1 | tee -a "$log_file"
-  local evfile="${OUTPUT_ROOT}/${prefix}_${seed}_0.dat"
+  ( cd "$DAT_ROOT" && "$train_bin" "$seed" ) 2>&1 | tee -a "$log_file"
+  local evfile="${DAT_ROOT}/${prefix}_${seed}_0.dat"
   if [ ! -f "$evfile" ]; then
     echo "ERROR: evfile not found: $evfile" | tee -a "$log_file" >&2
     exit 1

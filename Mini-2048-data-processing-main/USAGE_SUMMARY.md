@@ -98,13 +98,14 @@ g++ eval_state.cpp -O2 -std=c++20 -mcmodel=large -o eval_state_pp
 ```
 実行:
 ```
-./eval_state_pp <path_to_directory>
+./eval_state_pp <path_relative_to_board_data>
 ```
 出力:
-- `../board_data/PP/eval-state-<dir>.txt`
+- `../board_data/PP/eval-state-<safe_name>.txt`
 
 補足:
 - `state.txt` そのものではなく「ディレクトリ」を渡します。
+- `<safe_name>` は相対パスの `/` を `__` に置換したものです。
 
 ### eval_after_state.cpp
 コンパイル:
@@ -113,10 +114,13 @@ g++ eval_after_state.cpp -O2 -std=c++20 -mcmodel=large -o eval_after_state_pp
 ```
 実行:
 ```
-./eval_after_state_pp <path_to_directory>
+./eval_after_state_pp <path_relative_to_board_data>
 ```
 出力:
-- `../board_data/PP/eval-after-state-<dir>.txt`
+- `../board_data/PP/eval-after-state-<safe_name>.txt`
+ 
+補足:
+- `<safe_name>` は相対パスの `/` を `__` に置換したものです。
 
 ## graph - `graph/`
 
@@ -137,6 +141,7 @@ uv run -m graph histgram --exclude sample
 - `board_data` はリポジトリ直下を想定。
 - `scatter` / `scatter_v2` は `board_data/PP/eval-after-state-<player>.txt` が必要。
 - `scatter_v2` は `eval.txt` の各行で最大評価値を使います。
+- ネストしたディレクトリを対象にする場合は `--recursive` を使います。
 
 ## Expectimax - `Expectimax/`
 

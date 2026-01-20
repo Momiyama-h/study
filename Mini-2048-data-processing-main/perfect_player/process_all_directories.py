@@ -28,9 +28,19 @@ def process_files_with_pattern(base_dir: Path, pattern: str):
 
         print(f"Processing directory: {directory}")
 
-        # コマンドの実行
-        run_command("./eval_state", directory)
-        run_command("./eval_after_state", directory)
+        rel_path = directory.relative_to(base_dir)
+        state_file = directory / "state.txt"
+        after_state_file = directory / "after-state.txt"
+
+        if state_file.exists():
+            run_command("./eval_state", rel_path)
+        else:
+            print(f"Skipping eval_state (missing): {state_file}")
+
+        if after_state_file.exists():
+            run_command("./eval_after_state", rel_path)
+        else:
+            print(f"Skipping eval_after_state (missing): {after_state_file}")
 
         print(f"Directory {directory.name} processed successfully.")
 
@@ -50,7 +60,7 @@ def run_command(command: str, directory: Path):
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         print("Usage: python3 script.py <pattern>")
-        print("Example: python3 script.py 'MCTS4/game_count100_evfile4tuple_data_9.dat_simulations3000_randomTurn0_expandcount50_c-1_Boltzmann0_expectimax0'")
+        print("Example: python3 script.py '**/NT4_sym'")
         sys.exit(1)
 
     base_dir = Path("../board_data")

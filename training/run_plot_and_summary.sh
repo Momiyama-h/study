@@ -6,7 +6,7 @@ set -euo pipefail
 summary_file="score_summary.csv"
 echo "seed,tuple,symmetry,timestamp,score" > "$summary_file"
 
-OUTPUT_ROOT="mini2048_outputs"
+LOG_ROOT="${LOG_ROOT:-/HDD/momiyama2/data/study/training_logs}"
 SEEDS=("$@")  # コマンドライン引数で複数seed指定
 TUPLES=(4 6)
 
@@ -14,12 +14,12 @@ TUPLES=(4 6)
 for SEED in "${SEEDS[@]}"; do
   for tuple in "${TUPLES[@]}"; do
     # sym側ファイルのみでペア処理・スコア抽出
-    files=($(ls ${OUTPUT_ROOT}/log_${tuple}tuple_sym_seed${SEED}_*.txt 2>/dev/null))
+    files=($(ls ${LOG_ROOT}/log_${tuple}tuple_sym_seed${SEED}_*.txt 2>/dev/null))
     for file in "${files[@]}"; do
       ts=$(echo "$file" | sed -E 's/.*_seed[0-9]+_([0-9]{8}_[0-9]{4})\.txt/\1/')
-      pair_file="${OUTPUT_ROOT}/log_${tuple}tuple_notsym_seed${SEED}_${ts}.txt"
+      pair_file="${LOG_ROOT}/log_${tuple}tuple_notsym_seed${SEED}_${ts}.txt"
       if [ -f "$pair_file" ]; then
-        png="${OUTPUT_ROOT}/log_${tuple}tuples_seed${SEED}_${ts}.png"
+        png="${LOG_ROOT}/log_${tuple}tuples_seed${SEED}_${ts}.png"
         # plot_scores.pyの標準出力を取得
         output=$(python plot_scores.py --file1 "$file" --file2 "$pair_file" --output "$png")
         # sym側のfinal

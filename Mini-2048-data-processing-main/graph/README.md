@@ -22,6 +22,23 @@
 | `pp_eval_state` | プレイヤのプレイで現れたstateをPPに評価させた評価値ファイルのパス |
 | `pp_eval_after_state` | プレイヤのプレイで現れたafter_stateをPPに評価させた評価値ファイルのパス |
 
+#### meta.json (任意)
+
+各データディレクトリに `meta.json` がある場合、seedやstageのフィルタに利用できます。
+
+例:
+```json
+{
+  "id": "20260116_0419_4sym_seed5_g100__NT4_sym",
+  "relpath": "20260116_0419_4sym_seed5_g100/NT4_sym",
+  "tuple": 4,
+  "sym": "sym",
+  "seed": 5,
+  "stage": 9,
+  "evfile": "4tuple_sym_data_5_9.dat"
+}
+```
+
 ### common.py
 
 #### データクラス
@@ -145,6 +162,14 @@ def moving_average(data, window_size)
 ### --is-show
 
 完成したグラフを表示する。
+
+### --recursive
+
+`board_data` 配下を再帰的に探索してデータを拾う。
+
+### --seed / --stage / --tuple / --sym
+
+`meta.json` の値で絞り込む。
 
 ## 今後の予定
 

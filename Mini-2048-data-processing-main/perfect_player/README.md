@@ -42,14 +42,17 @@ g++ eval_state.cpp -std=c++20 -mcmodel=large
 ```
 
 ```bash
-./a.out load-player-name
+./a.out <path_relative_to_board_data>
 ```
 
 例:
 
 ```bash
-./a.out NT4
+./a.out 20260116_0419_4sym_seed5_g100/NT4_sym
 ```
+
+出力ファイル名は、`/` を `__` に置換した安全名で保存されます。
+例: `eval-state-20260116_0419_4sym_seed5_g100__NT4_sym.txt`
 
 ## 他のプレイヤーがプレイした afterstate を N タプルプレイヤーが評価する場合
 
@@ -64,11 +67,14 @@ g++ eval_after_state.cpp -std=c++20 -mcmodel=large
 ```
 
 ```bash
-./a.out load-player-name
+./a.out <path_relative_to_board_data>
 ```
 
 例:
 
 ```bash
-./a.out NT4
+./a.out 20260116_0419_4sym_seed5_g100/NT4_sym
 ```
+
+出力ファイル名は、`/` を `__` に置換した安全名で保存されます。
+例: `eval-after-state-20260116_0419_4sym_seed5_g100__NT4_sym.txt`

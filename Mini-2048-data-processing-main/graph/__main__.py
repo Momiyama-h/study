@@ -19,9 +19,7 @@ from . import (
     evals,
     progress_eval_accuracy,
 )
-from .common import PlayerData, board_dir, BASE_DIR
-
-board_data_dirs = [d for d in board_dir.iterdir() if d.is_dir()]
+from .common import PlayerData, board_dir, BASE_DIR, make_safe_name
 __version__ = "1.5.0"
 
 
@@ -33,13 +31,25 @@ def write_config(path: Path, config: dict) -> None:
     path.write_text(json.dumps(config, indent=4, ensure_ascii=False), "utf-8")
 
 
-def get_config():
+def discover_data_dirs(root: Path, recursive: bool) -> list[Path]:
+    if not root.exists():
+        return []
+    if recursive:
+        eval_files = root.rglob("eval.txt")
+        dirs = {p.parent for p in eval_files}
+        return sorted(dirs, key=lambda p: str(p))
+    return [d for d in root.iterdir() if d.is_dir()]
+
+
+def get_config(board_data_dirs: list[Path]):
     if config_path.exists():
         config = read_config(config_path)
         for d in board_data_dirs:
-            if d.name not in config:
-                config[d.name] = {
-                    "label": d.name,
+            rel = d.relative_to(board_dir)
+            key = make_safe_name(rel)
+            if key not in config:
+                config[key] = {
+                    "label": str(rel),
                     "color": None,
                     "linestyle": "solid",
                     "order": 0,
@@ -50,7 +60,11 @@ def get_config():
                 d["order"] = 0
     else:
         config = {
-            d.name: {"label": d.name, "color": None, "linestyle": "solid"}
+            make_safe_name(d.relative_to(board_dir)): {
+                "label": str(d.relative_to(board_dir)),
+                "color": None,
+                "linestyle": "solid",
+            }
             for d in board_data_dirs
         }
 
@@ -58,7 +72,41 @@ def get_config():
     return config
 
 
-def get_files(config: dict) -> list[PlayerData]:
+def normalize_sym(value):
+    if isinstance(value, bool):
+        return "sym" if value else "notsym"
+    if isinstance(value, str):
+        return value.lower()
+    return None
+
+
+def matches_meta(pd: PlayerData) -> bool:
+    if not (args.seed or args.stage or args.tuple or args.sym):
+        return True
+    meta = pd.meta
+    if not meta:
+        return False
+
+    def as_int(value):
+        if value is None:
+            return None
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return None
+
+    if args.seed and as_int(meta.get("seed")) not in args.seed:
+        return False
+    if args.stage and as_int(meta.get("stage")) not in args.stage:
+        return False
+    if args.tuple and as_int(meta.get("tuple")) not in args.tuple:
+        return False
+    if args.sym and normalize_sym(meta.get("sym")) != args.sym:
+        return False
+    return True
+
+
+def get_files(config: dict, board_data_dirs: list[Path]) -> list[PlayerData]:
     is_include_PP = args.graph in (
         "surv",
         "surv-diff",
@@ -67,13 +115,20 @@ def get_files(config: dict) -> list[PlayerData]:
         "boxplot-eval",
     )
 
-    data = [
-        PlayerData(d, config)
-        for d in board_data_dirs
-        if re.search(intersection_match, str(d))
-        and not re.search(exclude_match, str(d))
-        and (is_include_PP or not re.search("PP", str(d)))
-    ]
+    data = []
+    for d in board_data_dirs:
+        rel = d.relative_to(board_dir)
+        rel_str = str(rel)
+        if not re.search(intersection_match, rel_str):
+            continue
+        if re.search(exclude_match, rel_str):
+            continue
+        if not is_include_PP and rel.parts and rel.parts[0] == "PP":
+            continue
+        pd = PlayerData(d, config)
+        if not matches_meta(pd):
+            continue
+        data.append(pd)
     print(f"対象のディレクトリ数: {len(data)}")
     # dataをPlayerData.configのorderでソート
     data.sort(key=lambda pd: pd.config.get("order", 0))
@@ -132,6 +187,34 @@ arg_parser.add_argument(
     action="store_true",
     help="グラフ作成完了時に表示する。",
 )
+arg_parser.add_argument(
+    "--recursive",
+    action="store_true",
+    help="board_data配下を再帰的に探索する。",
+)
+arg_parser.add_argument(
+    "--seed",
+    nargs="+",
+    type=int,
+    help="meta.jsonのseedで絞り込む。",
+)
+arg_parser.add_argument(
+    "--stage",
+    nargs="+",
+    type=int,
+    help="meta.jsonのstageで絞り込む。",
+)
+arg_parser.add_argument(
+    "--tuple",
+    nargs="+",
+    type=int,
+    help="meta.jsonのtupleで絞り込む。",
+)
+arg_parser.add_argument(
+    "--sym",
+    choices=["sym", "notsym"],
+    help="meta.jsonのsymで絞り込む。",
+)
 boxplot_group = arg_parser.add_mutually_exclusive_group()
 boxplot_group.add_argument(
     "--min-progress",
@@ -163,13 +246,13 @@ arg_parser.add_argument(
 args = arg_parser.parse_args()
 exclude_match = re.compile("|".join(args.exclude + ["sample"]))
 intersection_match = re.compile("|".join(args.intersection))
-dirs = [d for d in board_data_dirs if not re.search(exclude_match, str(d))]
+board_data_dirs = discover_data_dirs(board_dir, args.recursive)
 output_dir = BASE_DIR.parent / "output"
 output_dir.mkdir(exist_ok=True)
 
 config_path = BASE_DIR / "config.json"
-config = get_config()
-player_data_list = get_files(config)
+config = get_config(board_data_dirs)
+player_data_list = get_files(config, board_data_dirs)
 
 if args.graph == "acc":
     output_name = args.output if args.output else "accuracy.pdf"

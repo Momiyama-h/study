@@ -10,14 +10,31 @@
 namespace fs = std::filesystem;
 using namespace std;
 
+static string make_safe_name(const string& input) {
+  string trimmed = input;
+  if (trimmed.rfind("./", 0) == 0) {
+    trimmed = trimmed.substr(2);
+  }
+  string out;
+  out.reserve(trimmed.size());
+  for (char c : trimmed) {
+    if (c == '/' || c == '\\') {
+      out += "__";
+    } else {
+      out += c;
+    }
+  }
+  return out;
+}
+
 int main(int argc, char** argv) {
   if (argc < 1 + 1) {
-    fprintf(stderr, "Usage: eval_after_state <path_to_directory>\n");
+    fprintf(stderr, "Usage: eval_after_state <path_relative_to_board_data>\n");
     exit(1);
   }
 
-    // ../board_data/argv[1] に変換
-    std::string input_dir = (fs::path("../board_data") / argv[1]).string();
+  fs::path input_rel = fs::path(argv[1]);
+  std::string input_dir = (fs::path("../board_data") / input_rel).string();
 
     // after-state.txt のパスを生成
     std::string after_state_file = (fs::path(input_dir) / "after-state.txt").string();
@@ -34,7 +51,7 @@ int main(int argc, char** argv) {
   fs::create_directory(output_dir);
 
   string file =
-      "eval-after-state-" + fs::path(input_dir).filename().string() + ".txt";
+      "eval-after-state-" + make_safe_name(input_rel.string()) + ".txt";
   string fullPath = output_dir + file;
 
   // 出力ファイルを開く

@@ -10,6 +10,23 @@
 namespace fs = std::filesystem;
 using namespace std;
 
+static string make_safe_name(const string& input) {
+  string trimmed = input;
+  if (trimmed.rfind("./", 0) == 0) {
+    trimmed = trimmed.substr(2);
+  }
+  string out;
+  out.reserve(trimmed.size());
+  for (char c : trimmed) {
+    if (c == '/' || c == '\\') {
+      out += "__";
+    } else {
+      out += c;
+    }
+  }
+  return out;
+}
+
 int progress_calculation(int board[9]) {
   int sum = 0;
   for (int i = 0; i < 9; i++) {
@@ -22,12 +39,12 @@ int progress_calculation(int board[9]) {
 
 int main(int argc, char** argv) {
   if (argc < 2) {
-    fprintf(stderr, "Usage: playgreedy <path_to_directory>\n");
+    fprintf(stderr, "Usage: eval_state <path_relative_to_board_data>\n");
     exit(1);
   }
 
-  // ../board_data/argv[1] に変換
-  std::string input_dir = (fs::path("../board_data") / argv[1]).string();
+  fs::path input_rel = fs::path(argv[1]);
+  std::string input_dir = (fs::path("../board_data") / input_rel).string();
 
   // state.txt のパスを決定
   string state_file = fs::path(input_dir) / "state.txt";
@@ -46,8 +63,8 @@ int main(int argc, char** argv) {
   fs::create_directory(output_dir);
 
   // 出力ファイルのパス
-  string output_file = output_dir + "eval-state-" +
-                       fs::path(input_dir).filename().string() + ".txt";
+  string output_file =
+      output_dir + "eval-state-" + make_safe_name(input_rel.string()) + ".txt";
 
   // 入力データの読み込み
   read_state_one_game(state_file);
