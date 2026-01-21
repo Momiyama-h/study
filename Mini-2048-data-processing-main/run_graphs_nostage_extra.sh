@@ -18,7 +18,7 @@ fi
 SEEDS=(5 6 7 8 9 10 11 12 13 14)
 TUPLES=(4 6)
 STAGE="${STAGE:-9}"
-GRAPHS=(acc err-abs err-rel evals histgram)
+GRAPHS=(acc err-abs err-rel evals histgram surv surv-diff)
 
 run_id_for_seed() {
   local seed="$1"
