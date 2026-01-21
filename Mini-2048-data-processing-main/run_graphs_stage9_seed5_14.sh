@@ -9,12 +9,7 @@ RUN_ID_10_14="20260121_0035"
 SEEDS=(5 6 7 8 9 10 11 12 13 14)
 TUPLES=(4 6)
 STAGE=9
-GRAPHS=(acc err-rel err-abs surv surv-diff histgram evals scatter_v2)
-
-INTERSECTION_PREFIXES=(
-  "${RUN_ID_5_9}_"
-  "${RUN_ID_10_14}_"
-)
+GRAPHS=(acc acc-diff err-rel err-abs surv surv-diff evals scatter_v2)
 
 run_id_for_seed() {
   local seed="$1"
@@ -25,41 +20,29 @@ run_id_for_seed() {
   fi
 }
 
-run_graph_set() {
-  local sym="$1"
-  for g in "${GRAPHS[@]}"; do
-    uv run -m graph "$g" \
-      --recursive \
-      --stage "$STAGE" \
-      --seed "${SEEDS[@]}" \
-      --tuple "${TUPLES[@]}" \
-      --sym "$sym" \
-      --intersection "${INTERSECTION_PREFIXES[@]}" \
-      --output "${g}_${sym}_s${STAGE}.png"
-  done
-}
-
-run_acc_diff() {
-  local seed="$1"
-  local tuple="$2"
+run_pair_graph() {
+  local graph="$1"
+  local seed="$2"
+  local tuple="$3"
   local run_id
   run_id="$(run_id_for_seed "$seed")"
+  local sym_path="${run_id}_${tuple}sym_seed${seed}_g100/NT${tuple}_sym"
+  local notsym_path="${run_id}_${tuple}notsym_seed${seed}_g100/NT${tuple}_notsym"
 
-  uv run -m graph acc-diff \
+  uv run -m graph "$graph" \
     --recursive \
     --stage "$STAGE" \
-    --intersection "${run_id}_${tuple}sym_seed${seed}_g100/NT${tuple}_sym" \
-                   "${run_id}_${tuple}notsym_seed${seed}_g100/NT${tuple}_notsym" \
-    --output "acc-diff_t${tuple}_seed${seed}_s${STAGE}.png"
+    --intersection "$sym_path" \
+                   "$notsym_path" \
+    --output "${graph}_t${tuple}_seed${seed}_s${STAGE}.png"
 }
 
 cd "$BASE_DIR"
 
-run_graph_set sym
-run_graph_set notsym
-
 for seed in "${SEEDS[@]}"; do
   for tuple in "${TUPLES[@]}"; do
-    run_acc_diff "$seed" "$tuple"
+    for graph in "${GRAPHS[@]}"; do
+      run_pair_graph "$graph" "$seed" "$tuple"
+    done
   done
 done
