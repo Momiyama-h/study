@@ -15,7 +15,9 @@ RUN_TS="${RUN_TS:-$(date +%Y%m%d_%H%M)}"
 PARALLEL="${PARALLEL:-8}"
 STDOUT_LOG="${STDOUT_LOG:-0}"
 EV_STAGE="${EV_STAGE:-9}"
-STAGE_MODES=(${STAGE_MODES:-"stage nostage"})
+STAGE_MODES_STR="${STAGE_MODES:-stage nostage}"
+STAGE_MODES_STR="${STAGE_MODES_STR//,/ }"
+read -r -a STAGE_MODES <<< "$STAGE_MODES_STR"
 
 DAT_ROOT_BASE="${DAT_ROOT_BASE:-/HDD/momiyama2/data/study/ntuple_dat/stage_compare/${SEED_SPEC}/g${GAME_COUNT}/${RUN_TS}}"
 
