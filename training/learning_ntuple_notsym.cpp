@@ -42,7 +42,14 @@ FILE *csv_fp = nullptr;
 FILE *board_log_fp = nullptr;
 
 // 追跡するタプルIDを指定（必要に応じて変更）
-static const int TRACKED_TUPLE_ID[] = {0, 3, 6, 9, 12, 15, 18, 21};
+#if defined(USE_4TUPLE) || defined(NT4A)
+static constexpr int TRACKED_TUPLE_ID[] = {0, 3, 6, 9, 12, 15, 18, 21};
+#else
+// 6tuple(notsym)はNUM_TUPLE=16なので、0..7を追跡
+static constexpr int TRACKED_TUPLE_ID[] = {0, 1, 2, 3, 4, 5, 6, 7};
+#endif
+static constexpr int TRACKED_TUPLE_COUNT =
+    sizeof(TRACKED_TUPLE_ID) / sizeof(TRACKED_TUPLE_ID[0]);
 
 // 固定盤面状態を指定（9要素の配列）
 // 0: タイルがない、1-10: タイル値（2^1から2^10）
@@ -86,14 +93,20 @@ void openCsvLog()
 #if !ENABLE_CSV_LOG
   return;
 #endif
+  const char* tag = getenv("CSV_LOG_TAG");
+  char suffix[64] = "";
+  if (tag && *tag) {
+    snprintf(suffix, sizeof(suffix), "__%s", tag);
+  }
   // 現在時刻を取得して15分単位に切り捨て
   time_t now = time(nullptr);
   struct tm* t = localtime(&now);
   int rounded_min = (t->tm_min / 15) * 15;
   
   char filename[256];
-  sprintf(filename, "tuple_learning_rate_log_notsym_seed%d_%04d%02d%02d%02d%02d.csv",
-          global_seed, t->tm_year + 1900, t->tm_mon + 1, t->tm_mday, t->tm_hour, rounded_min);
+  sprintf(filename, "tuple_learning_rate_log_notsym_seed%d_%04d%02d%02d%02d%02d%s.csv",
+          global_seed, t->tm_year + 1900, t->tm_mon + 1, t->tm_mday,
+          t->tm_hour, rounded_min, suffix);
   
   csv_fp = fopen(filename, "w");
   if (!csv_fp) {
@@ -122,7 +135,7 @@ void logTupleStats(int game_id, int score, int total_turns, const int* board)
 {
   if (!csv_fp) return;
 
-  const int NUM_TRACKED = 8;
+  const int NUM_TRACKED = TRACKED_TUPLE_COUNT;
   
   // ステージ判定（固定盤面から判定）
   int s = 0;
@@ -134,11 +147,12 @@ void logTupleStats(int game_id, int score, int total_turns, const int* board)
   int index = 0;
 #if defined(USE_4TUPLE) || defined(NT4A)
   for (int k = 0; k < TUPLE_SIZE; k++) {
-    index = index * VARIATION_TILE + FIXED_BOARD[sympos[0][pos[TRACKED_TUPLE_ID[0]][k]]];
+    index = index * VARIATION_TILE + FIXED_BOARD[pos[TRACKED_TUPLE_ID[0]][k]];
   }
 #else
   for (int k = 0; k < NT6_notsym::TUPLE_SIZE; k++) {
-    index = index * NT6_notsym::VARIATION_TILE + FIXED_BOARD[NT6_notsym::sympos[0][NT6_notsym::pos[TRACKED_TUPLE_ID[0]][k]]];
+    index = index * NT6_notsym::VARIATION_TILE +
+            FIXED_BOARD[NT6_notsym::pos[TRACKED_TUPLE_ID[0]][k]];
   }
 #endif
 
@@ -151,14 +165,23 @@ void logTupleStats(int game_id, int score, int total_turns, const int* board)
   double aerr_sum = 0.0, err_sum = 0.0, uc_sum = 0.0, ratio_sum = 0.0;
   
   for (int i = 0; i < NUM_TRACKED; i++) {
+    const int tuple_id = TRACKED_TUPLE_ID[i];
+    int tindex = 0;
 #if defined(USE_4TUPLE) || defined(NT4A)
-    aerr_vals[i] = aerrs[s][TRACKED_TUPLE_ID[i]][index];
-    err_vals[i] = errs[s][TRACKED_TUPLE_ID[i]][index];
-    uc_vals[i] = updatecounts[s][TRACKED_TUPLE_ID[i]][index];
+    for (int k = 0; k < TUPLE_SIZE; k++) {
+      tindex = tindex * VARIATION_TILE + FIXED_BOARD[pos[tuple_id][k]];
+    }
+    aerr_vals[i] = aerrs[s][tuple_id][tindex];
+    err_vals[i] = errs[s][tuple_id][tindex];
+    uc_vals[i] = updatecounts[s][tuple_id][tindex];
 #else
-    aerr_vals[i] = NT6_notsym::aerrs[s][TRACKED_TUPLE_ID[i]][index];
-    err_vals[i] = NT6_notsym::errs[s][TRACKED_TUPLE_ID[i]][index];
-    uc_vals[i] = NT6_notsym::updatecounts[s][TRACKED_TUPLE_ID[i]][index];
+    for (int k = 0; k < NT6_notsym::TUPLE_SIZE; k++) {
+      tindex = tindex * NT6_notsym::VARIATION_TILE +
+               FIXED_BOARD[NT6_notsym::pos[tuple_id][k]];
+    }
+    aerr_vals[i] = NT6_notsym::aerrs[s][tuple_id][tindex];
+    err_vals[i] = NT6_notsym::errs[s][tuple_id][tindex];
+    uc_vals[i] = NT6_notsym::updatecounts[s][tuple_id][tindex];
 #endif
     ratio_vals[i] = (aerr_vals[i] != 0) ? err_vals[i] / aerr_vals[i] : 0.0;
     

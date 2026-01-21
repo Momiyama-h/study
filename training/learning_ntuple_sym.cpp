@@ -85,14 +85,20 @@ void openCsvLog()
 #if !ENABLE_CSV_LOG
   return;
 #endif
+  const char* tag = getenv("CSV_LOG_TAG");
+  char suffix[64] = "";
+  if (tag && *tag) {
+    snprintf(suffix, sizeof(suffix), "__%s", tag);
+  }
   // 現在時刻を取得して15分単位に切り捨て
   time_t now = time(nullptr);
   struct tm* t = localtime(&now);
   int rounded_min = (t->tm_min / 15) * 15;
   
   char filename[256];
-  sprintf(filename, "tuple_learning_rate_log_seed%d_%04d%02d%02d%02d%02d.csv",
-          global_seed, t->tm_year + 1900, t->tm_mon + 1, t->tm_mday, t->tm_hour, rounded_min);
+  sprintf(filename, "tuple_learning_rate_log_seed%d_%04d%02d%02d%02d%02d%s.csv",
+          global_seed, t->tm_year + 1900, t->tm_mon + 1, t->tm_mday,
+          t->tm_hour, rounded_min, suffix);
   
   csv_fp = fopen(filename, "w");
   if (!csv_fp) {
