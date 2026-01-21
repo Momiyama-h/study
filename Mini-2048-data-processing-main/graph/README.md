@@ -172,6 +172,11 @@ def moving_average(data, window_size)
 
 完成したグラフを表示する。
 
+### --acc-diff-order
+
+`acc-diff` の比較順を指定する。デフォルトは入力順。
+選択肢: `input` / `sym-notsym` / `notsym-sym`
+
 ### --recursive
 
 `board_data` 配下を再帰的に探索してデータを拾う。

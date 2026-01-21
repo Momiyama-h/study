@@ -28,6 +28,7 @@ def calc_accuracy(
 
 def acc_diff_plot(
     player_data_list: list[PlayerData],
+    order: str = "input",
 ) -> PlotData:
     """
     最善手率の差分を計算し、プロットする。
@@ -71,8 +72,42 @@ def acc_diff_plot(
     if len(player_data_list) < 2:
         raise ValueError("少なくとも2つの player_data_list が必要です。")
 
-    first = player_data_list[0]
-    second = player_data_list[1]
+    def order_sym_notsym(
+        players: list[PlayerData],
+        prefer_first: str,
+    ) -> list[PlayerData]:
+        first_match = None
+        second_match = None
+        rest = []
+        for pd in players:
+            sym_value = None
+            meta = pd.meta
+            if isinstance(meta, dict):
+                sym_value = meta.get("sym")
+            if sym_value is None:
+                name = pd.name.lower()
+                if "notsym" in name:
+                    sym_value = "notsym"
+                elif "sym" in name:
+                    sym_value = "sym"
+            if sym_value == prefer_first and first_match is None:
+                first_match = pd
+            elif sym_value and sym_value != prefer_first and second_match is None:
+                second_match = pd
+            else:
+                rest.append(pd)
+        if first_match and second_match:
+            return [first_match, second_match] + rest
+        return players
+
+    ordered = player_data_list
+    if order == "sym-notsym":
+        ordered = order_sym_notsym(player_data_list, "sym")
+    elif order == "notsym-sym":
+        ordered = order_sym_notsym(player_data_list, "notsym")
+
+    first = ordered[0]
+    second = ordered[1]
 
     result2 = PlotData(
         x_label="progress",

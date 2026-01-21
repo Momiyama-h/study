@@ -219,6 +219,12 @@ arg_parser.add_argument(
     help="グラフ作成完了時に表示する。",
 )
 arg_parser.add_argument(
+    "--acc-diff-order",
+    choices=["input", "sym-notsym", "notsym-sym"],
+    default="input",
+    help="acc-diffの比較順を指定する（デフォルトは入力順）。",
+)
+arg_parser.add_argument(
     "--recursive",
     action="store_true",
     help="board_data配下を再帰的に探索する。",
@@ -296,6 +302,7 @@ elif args.graph == "acc-diff":
 
     result = acc_diff.acc_diff_plot(
         player_data_list=player_data_list,
+        order=args.acc_diff_order,
     )
 elif args.graph == "err-rel":
     output_name = args.output if args.output else "error_rel.pdf"
