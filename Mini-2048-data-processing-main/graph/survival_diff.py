@@ -50,7 +50,7 @@ def calc_survival_diff_rate_data(
                 abs(max_value / len(progresses) - pp_survival_rate[i])
             )
 
-        result.data[state_file.parent.name] = GraphData(
+        result.data[pd.name] = GraphData(
             x=list(range(len(diff_survival_rate))),
             y=diff_survival_rate,
         )
