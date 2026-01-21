@@ -76,6 +76,20 @@ run_one() {
   echo "== Eval: BOARD_DATA_ROOT=${root} ==" | tee -a "$log_file"
   BOARD_DATA_ROOT="$root" "$BASE_NT/play_nt_ns" "$seed" "$GAME_COUNT" "$evfile" "$symmetry" "$tuple" \
     2>&1 | tee -a "$log_file"
+  local data_dir="${root}/NT${tuple}_${symmetry}"
+  local meta_path="${data_dir}/meta.json"
+  local write_meta="${REPO_ROOT}/Mini-2048-data-processing-main/write_meta.py"
+  if [ -f "$write_meta" ] && [ -d "$data_dir" ]; then
+    if [ -f "$meta_path" ]; then
+      echo "== Meta: skip (exists) ${meta_path} ==" | tee -a "$log_file"
+    else
+      echo "== Meta: create ${meta_path} ==" | tee -a "$log_file"
+      python3 "$write_meta" --board-dir "$BOARD_DATA_PARENT" "$data_dir" "$evfile" \
+        2>&1 | tee -a "$log_file"
+    fi
+  else
+    echo "WARN: meta.json skipped (missing write_meta.py or data_dir)" | tee -a "$log_file"
+  fi
   echo | tee -a "$log_file"
 }
 
