@@ -8,6 +8,7 @@ BASE_DIR="$(cd "$(dirname "$0")" && pwd)"
 RUN_ID_5_9="${RUN_ID_5_9:-}"
 RUN_ID_10_14="${RUN_ID_10_14:-}"
 ACC_DIFF_ORDER="${ACC_DIFF_ORDER:-sym-notsym}"
+RUN_SUFFIX="${RUN_SUFFIX:-__nostage}"
 
 if [ -z "$RUN_ID_5_9" ] || [ -z "$RUN_ID_10_14" ]; then
   echo "ERROR: RUN_ID_5_9 and RUN_ID_10_14 must be set."
@@ -36,8 +37,8 @@ run_pair_graph() {
   local tuple="$3"
   local run_id
   run_id="$(run_id_for_seed "$seed")"
-  local sym_path="${run_id}_${tuple}sym_seed${seed}_g100/NT${tuple}_sym"
-  local notsym_path="${run_id}_${tuple}notsym_seed${seed}_g100/NT${tuple}_notsym"
+  local sym_path="${run_id}_${tuple}sym_seed${seed}_g100${RUN_SUFFIX}/NT${tuple}_sym"
+  local notsym_path="${run_id}_${tuple}notsym_seed${seed}_g100${RUN_SUFFIX}/NT${tuple}_notsym"
 
   if [ "$graph" = "acc-diff" ]; then
     uv run -m graph "$graph" \
