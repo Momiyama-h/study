@@ -35,6 +35,17 @@ using namespace std;
 #ifndef ENABLE_BOARD_LOG
 #define ENABLE_BOARD_LOG 0
 #endif
+#ifndef ENABLE_STDOUT_LOG
+#define ENABLE_STDOUT_LOG 1
+#endif
+
+#if ENABLE_STDOUT_LOG
+#define STDOUT_LOG(...) printf(__VA_ARGS__)
+#else
+#define STDOUT_LOG(...) \
+  do {                 \
+  } while (0)
+#endif
 
 int storage_c = 0;
 int global_seed = 0;
@@ -113,7 +124,7 @@ void openCsvLog()
     fprintf(stderr, "Failed to open %s\n", filename);
     return;
   }
-  printf("CSV log: %s\n", filename);
+  STDOUT_LOG("CSV log: %s\n", filename);
   // CSVヘッダー出力
   fprintf(csv_fp, "game_id,score,total_turns,stage,board_index,"
           "aerr_avg,aerr_std,err_avg,err_std,"
@@ -244,7 +255,7 @@ void saveEvs()
   NT6_notsym::writeEvs(fp);
 #endif
   fclose(fp);
-  printf("stored %s\n", filename);
+  STDOUT_LOG("stored %s\n", filename);
   if (storage_c == STORAGE_COUNT) exit(0);
 }
 
@@ -266,30 +277,30 @@ int main(int argc, char* argv[])
   openBoardLog();
 
   // タプル情報の出力
-  printf("=== Loaded Tuples Information ===\n");
+  STDOUT_LOG("=== Loaded Tuples Information ===\n");
 #if defined(USE_4TUPLE) || defined(NT4A)
-  printf("Number of tuples: %d\n", NUM_TUPLE);
-  printf("Tuple size: %d\n", TUPLE_SIZE);
-  printf("Number of stages: %d\n", NUM_STAGES);
+  STDOUT_LOG("Number of tuples: %d\n", NUM_TUPLE);
+  STDOUT_LOG("Tuple size: %d\n", TUPLE_SIZE);
+  STDOUT_LOG("Number of stages: %d\n", NUM_STAGES);
   for (int i = 0; i < NUM_TUPLE; i++) {
-    printf("Tuple %d: [", i);
+    STDOUT_LOG("Tuple %d: [", i);
     for (int j = 0; j < TUPLE_SIZE; j++) {
-      printf("%d", pos[i][j]);
-      if (j < TUPLE_SIZE - 1) printf(", ");
+      STDOUT_LOG("%d", pos[i][j]);
+      if (j < TUPLE_SIZE - 1) STDOUT_LOG(", ");
 #else
-  printf("Number of tuples: %d\n", NT6_notsym::NUM_TUPLE);
-  printf("Tuple size: %d\n", NT6_notsym::TUPLE_SIZE);
-  printf("Number of stages: %d\n", NT6_notsym::NUM_STAGES);
+  STDOUT_LOG("Number of tuples: %d\n", NT6_notsym::NUM_TUPLE);
+  STDOUT_LOG("Tuple size: %d\n", NT6_notsym::TUPLE_SIZE);
+  STDOUT_LOG("Number of stages: %d\n", NT6_notsym::NUM_STAGES);
   for (int i = 0; i < NT6_notsym::NUM_TUPLE; i++) {
-    printf("Tuple %d: [", i);
+    STDOUT_LOG("Tuple %d: [", i);
     for (int j = 0; j < NT6_notsym::TUPLE_SIZE; j++) {
-      printf("%d", NT6_notsym::pos[i][j]);
-      if (j < NT6_notsym::TUPLE_SIZE - 1) printf(", ");
+      STDOUT_LOG("%d", NT6_notsym::pos[i][j]);
+      if (j < NT6_notsym::TUPLE_SIZE - 1) STDOUT_LOG(", ");
 #endif
     }
-    printf("]\n");
+    STDOUT_LOG("]\n");
   }
-  printf("=================================\n");
+  STDOUT_LOG("=================================\n");
   // prev: printf("CSV log: tuple_learning_rate_log_notsym.csv\n\n");
 
   int traincount = 0;
@@ -348,7 +359,7 @@ int main(int argc, char* argv[])
 #endif
 	traincount++;
 	if (traincount % STORAGE_FREQUENCY == 0) saveEvs();
-	printf("game %d finished with score %d\n", gid+1, state.score);
+	STDOUT_LOG("game %d finished with score %d\n", gid+1, state.score);
           // ゲーム終了時に特定タプルの学習状態を記録
           logTupleStats(gid+1, state.score, turn, lastboard);
 	break;

@@ -13,6 +13,7 @@ SEED_SPEC="${SEED_SPEC:-seed15-24}"
 GAME_COUNT=100
 RUN_TS="${RUN_TS:-$(date +%Y%m%d_%H%M)}"
 PARALLEL="${PARALLEL:-8}"
+STDOUT_LOG="${STDOUT_LOG:-0}"
 EV_STAGE="${EV_STAGE:-9}"
 STAGE_MODES=(${STAGE_MODES:-"stage nostage"})
 
@@ -80,13 +81,13 @@ for stage_mode in "${STAGE_MODES[@]}"; do
   case "$stage_mode" in
     stage)
       stage_tag="stage"
-      train_flags="-DENABLE_CSV_LOG=1"
+      train_flags="-DENABLE_CSV_LOG=1 -DENABLE_STDOUT_LOG=${STDOUT_LOG}"
       play_flags=""
       bin_suffix="_st"
       ;;
     nostage)
       stage_tag="nostage"
-      train_flags="-DSINGLE_STAGE -DENABLE_CSV_LOG=1"
+      train_flags="-DSINGLE_STAGE -DENABLE_CSV_LOG=1 -DENABLE_STDOUT_LOG=${STDOUT_LOG}"
       play_flags="-DSINGLE_STAGE"
       bin_suffix="_ns"
       ;;

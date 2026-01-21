@@ -34,6 +34,17 @@ using namespace std;
 #ifndef ENABLE_BOARD_LOG
 #define ENABLE_BOARD_LOG 0
 #endif
+#ifndef ENABLE_STDOUT_LOG
+#define ENABLE_STDOUT_LOG 1
+#endif
+
+#if ENABLE_STDOUT_LOG
+#define STDOUT_LOG(...) printf(__VA_ARGS__)
+#else
+#define STDOUT_LOG(...) \
+  do {                 \
+  } while (0)
+#endif
 
 int storage_c = 0;
 int global_seed = 0;
@@ -105,7 +116,7 @@ void openCsvLog()
     fprintf(stderr, "Failed to open %s\n", filename);
     return;
   }
-  printf("CSV log: %s\n", filename);
+  STDOUT_LOG("CSV log: %s\n", filename);
   // CSVヘッダー出力
   fprintf(csv_fp, "game_id,score,total_turns,tuple_id,stage,board_index,aerr,err,updatecounts\n");
   // fflush(csv_fp);  // Removed for performance - OS buffering is sufficient
@@ -173,7 +184,7 @@ void saveEvs()
   }
   writeEvs(fp);
   fclose(fp);
-  printf("stored %s\n", filename);
+  STDOUT_LOG("stored %s\n", filename);
   if (storage_c == STORAGE_COUNT) exit(0);
 }
 
@@ -233,7 +244,7 @@ int main(int argc, char* argv[])
 	update(lastboard, 0 - calcEv(lastboard));
 	traincount++;
 	if (traincount % STORAGE_FREQUENCY == 0) saveEvs();
-	printf("game %d finished with score %d\n", gid+1, state.score);
+	STDOUT_LOG("game %d finished with score %d\n", gid+1, state.score);
 	// ゲーム終了時に学習率を記録
 	logTupleStats(gid+1, state.score, turn, lastboard);
 	break;

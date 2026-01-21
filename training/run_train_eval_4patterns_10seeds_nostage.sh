@@ -14,6 +14,7 @@ GAME_COUNT=100
 RUN_TS=$(date +%Y%m%d_%H%M)
 RUN_TAG="${RUN_TAG:-nostage}"
 PARALLEL="${PARALLEL:-4}"
+STDOUT_LOG="${STDOUT_LOG:-0}"
 
 TAG_SUFFIX=""
 if [ -n "$RUN_TAG" ]; then
@@ -47,10 +48,10 @@ compile_train() {
   g++ "$src" -O2 -std=c++20 $extra -o "$out"
 }
 
-compile_train "$BASE_MINI/learning_ntuple_sym.cpp" "$BASE_MINI/learn_6sym_ns" "-DSINGLE_STAGE"
-compile_train "$BASE_MINI/learning_ntuple_notsym.cpp" "$BASE_MINI/learn_6notsym_ns" "-DSINGLE_STAGE"
-compile_train "$BASE_MINI/learning_ntuple_sym.cpp" "$BASE_MINI/learn_4sym_ns" "-DUSE_4TUPLE -DSINGLE_STAGE"
-compile_train "$BASE_MINI/learning_ntuple_notsym.cpp" "$BASE_MINI/learn_4notsym_ns" "-DUSE_4TUPLE -DSINGLE_STAGE"
+compile_train "$BASE_MINI/learning_ntuple_sym.cpp" "$BASE_MINI/learn_6sym_ns" "-DSINGLE_STAGE -DENABLE_STDOUT_LOG=${STDOUT_LOG}"
+compile_train "$BASE_MINI/learning_ntuple_notsym.cpp" "$BASE_MINI/learn_6notsym_ns" "-DSINGLE_STAGE -DENABLE_STDOUT_LOG=${STDOUT_LOG}"
+compile_train "$BASE_MINI/learning_ntuple_sym.cpp" "$BASE_MINI/learn_4sym_ns" "-DUSE_4TUPLE -DSINGLE_STAGE -DENABLE_STDOUT_LOG=${STDOUT_LOG}"
+compile_train "$BASE_MINI/learning_ntuple_notsym.cpp" "$BASE_MINI/learn_4notsym_ns" "-DUSE_4TUPLE -DSINGLE_STAGE -DENABLE_STDOUT_LOG=${STDOUT_LOG}"
 
 echo "Compile: Play_NT_player.cpp -> play_nt_ns"
 g++ "$BASE_NT/Play_NT_player.cpp" -O2 -std=c++20 -DSINGLE_STAGE -o "$BASE_NT/play_nt_ns"
