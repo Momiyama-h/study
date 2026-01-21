@@ -9,7 +9,7 @@
 
 | フィールド名 | 説明 |
 |------------|------|
-| `name` | プレイヤの名前 |
+| `name` | プレイヤの名前（board_data相対パスの安全名） |
 | `target_dir` | プレイヤのデータが格納されているディレクトリ |
 | `pp_dir` | プレイヤのPPデータが格納されているディレクトリ |
 
@@ -38,6 +38,9 @@
   "evfile": "4tuple_sym_data_5_9.dat"
 }
 ```
+
+補足: グラフ表示ラベルは config.json の label を使用し、未設定の場合は meta.json から
+`NT{tuple}_{sym}_s{seed}_st{stage}` を自動生成します。
 
 ### common.py
 
@@ -121,14 +124,20 @@ def moving_average(data, window_size)
 
 | グラフタイプ | 説明 |
 |------------|------|
+| `acc` | 正確性 |
+| `acc-diff` | 正確性差分 |
+| `err-rel` | 相対誤差 |
+| `err-abs` | 絶対誤差 |
 | `surv` | 生存率 |
 | `surv-diff` | 生存率(パーフェクトプレイヤとの差) |
 | `scatter` | パーフェクトプレイヤとの散布図 |
-| `err-abs` | 絶対誤差 |
-| `err-rel` | 相対誤差 |
-| `acc` | 正確性 |
+| `scatter_v2` | パーフェクトプレイヤとの散布図（eval最大値） |
 | `histgram` | 得点分布 |
 | `evals` | 評価値のProgressごとの散布図 |
+| `boxplot-eval` | 評価値比率の箱ひげ図 |
+| `pea` | progress評価と正確性の関係 |
+
+補足: scatter は 1000 件、scatter_v2 は 1500 件をランダム抽出します。データ数が不足するとエラーになります。
 
 ## 引数の説明
 
@@ -171,11 +180,27 @@ def moving_average(data, window_size)
 
 `meta.json` の値で絞り込む。
 
+## 一括実行（scatter）
+
+`run_scatter_pipeline.sh` で、以下を一括実行できます。
+- meta.json の不足分作成
+- PP eval-after-state の不足分作成
+- scatter の実行
+
+例:
+```bash
+./run_scatter_pipeline.sh --seed-start 5 --seed-end 14 --tuples 4,6 --stage 9 --output scatter.png
+```
+
+補足:
+- `--sync` を付けると `uv sync` を実行します
+- `perfect_player/db2.out` が必要です
+
 ## 今後の予定
 
 上から順に優先度が高い。
 
-- [ ] サブディレクトリ内のデータを参照できるようにする。(確認必要)
-- [ ] surv diff を出せるようにする。
+- [x] サブディレクトリ内のデータを参照できるようにする（--recursive）。
+- [x] surv diff を出せるようにする。
 - [ ] グラフ設定を行えるようにする。
 - [ ] ファイル指定を tkinter でグラフィカルに行えるようにする。

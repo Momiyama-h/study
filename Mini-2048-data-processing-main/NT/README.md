@@ -27,6 +27,18 @@ g++ Play_NT_player.cpp -std=c++20
 
 このように動かせば動きます。評価ファイルの先頭を参照してタプルを選んでいますので、評価ファイルの名前を変更する際は注意してください。
 
+### SINGLE_STAGE（マルチステージ無効）で使う場合
+
+学習側を `-DSINGLE_STAGE` でビルドした .dat を使う場合は、評価側も同じフラグでビルドしてください。
+
+例:
+```bash
+g++ Play_NT_player.cpp -std=c++20 -DSINGLE_STAGE -o play_nt_ns
+./play_nt_ns 0 100 6tuple_sym_data_0_0.dat sym 6
+```
+
+`eval_state.cpp` / `eval_after_state.cpp` を使う場合も同様に `-DSINGLE_STAGE` を付けます。
+
 ### board_data 世代分け（環境変数）
 
 `BOARD_DATA_ROOT` を設定すると、出力先の `board_data` を任意のディレクトリに切り替えられます。

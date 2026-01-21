@@ -25,6 +25,8 @@ g++ Play_NT_player.cpp -O2 -std=c++20 -o play_nt
 
 補足:
 - `sym|notsym` や `4|6` を省略すると `evfile` 名から推定します。
+- 学習側を `-DSINGLE_STAGE` でビルドした .dat を使う場合は、評価側も `-DSINGLE_STAGE` を付けてください。
+  例: `g++ Play_NT_player.cpp -O2 -std=c++20 -DSINGLE_STAGE -o play_nt_ns`
 
 ### Play_NT_player_notsym.cpp（旧版）
 コンパイル:
@@ -47,6 +49,8 @@ g++ eval_state.cpp -O2 -std=c++20 -o eval_state
 ```
 ./eval_state <load-player-name> <EV-file> [sym|notsym] [4|6]
 ```
+補足:
+- `SINGLE_STAGE` の .dat では `-DSINGLE_STAGE` を付けてビルドする。
 出力:
 - `../board_data/eval-state-<load-player-name>.txt`
 
@@ -59,6 +63,8 @@ g++ eval_after_state.cpp -O2 -std=c++20 -o eval_after_state
 ```
 ./eval_after_state <load-player-name> <EV-file> [sym|notsym] [4|6]
 ```
+補足:
+- `SINGLE_STAGE` の .dat では `-DSINGLE_STAGE` を付けてビルドする。
 出力:
 - `../board_data/eval-after-state-<load-player-name>.txt`
 

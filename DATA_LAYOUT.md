@@ -32,6 +32,12 @@
 
 ---
 
+## SINGLE_STAGE（マルチステージ無効）運用
+- 学習・評価を **1ステージ固定** にする場合は、学習/評価バイナリのコンパイル時に `-DSINGLE_STAGE` を付ける。
+- seed5〜14、4/6タプルの nostage 用一括スクリプトは `training/run_train_eval_4patterns_10seeds_nostage.sh`。
+- .dat の保存先は **ディレクトリ分離** で区別する（例: `${STUDY_DATA_ROOT}/ntuple_dat/nostage/seed5-14/g100/<RUN_TS>__nostage`）。
+- `board_data` の run_id も `__nostage` などの suffix を付けると追跡しやすい。
+
 ## データ保存の基準パス（サーバ推奨）
 データのルート（推奨）:
 - `STUDY_DATA_ROOT=/HDD/momiyama2/data/study`

@@ -14,7 +14,23 @@ perfect_player はメモリ不足が懸念されるので、サーバで動か�
 ## NT 注意点
 
 4tuple_data_9.dat のような各タプルの学習済みファイルが必要です。
-詳しい内容は[この README](./perfect_player/README.md)を確認してください。
+詳しい内容は[この README](./NT/README.md)を確認してください。
+
+## 一括実行（scatter）
+
+`run_scatter_pipeline.sh` で、以下を一括実行できます。
+- meta.json の不足分作成
+- PP eval-after-state の不足分作成
+- scatter の実行
+
+例:
+```bash
+./run_scatter_pipeline.sh --seed-start 5 --seed-end 14 --tuples 4,6 --stage 9 --output scatter.png
+```
+
+補足:
+- `--sync` を付けると `uv sync` を実行します
+- `perfect_player/db2.out` が必要です
 
 ## TODO
 

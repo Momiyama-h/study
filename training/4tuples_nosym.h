@@ -81,6 +81,19 @@ const int sympos[8][9] =
         {8, 5, 2, 7, 4, 1, 6, 3, 0},
 };
 
+inline int calcStage(const int* board)
+{
+#ifdef SINGLE_STAGE
+  return 0;
+#else
+  for (int i = 0; i < 9; i++) {
+    if (board[i] >= 9) return 1;
+  }
+  return 0;
+#endif
+}
+
+
 inline void initEvs(double initEv)
 {
   double iev = initEv / NUM_TUPLE;
@@ -156,12 +169,7 @@ inline void readEvs(FILE *fp)
 
 inline double calcEv(const int *board)
 {
-  int s = 0;
-  for (int i = 0; i < 9; i++)
-  {
-    if (board[i] >= 9)
-      s = 1;
-  }
+  int s = calcStage(board);
 
   double ev = 0;
   for (int i = 0; i < NUM_TUPLE; i++)
@@ -183,12 +191,7 @@ inline double calcEv(const int *board)
 
 inline double calcErr(const int *board)
 {
-  int s = 0;
-  for (int i = 0; i < 9; i++)
-  {
-    if (board[i] >= 9)
-      s = 1;
-  }
+  int s = calcStage(board);
 
   double err = 0;
   for (int i = 0; i < NUM_TUPLE; i++)
@@ -208,12 +211,7 @@ inline double calcErr(const int *board)
 
 inline double calcAErr(const int *board)
 {
-  int s = 0;
-  for (int i = 0; i < 9; i++)
-  {
-    if (board[i] >= 9)
-      s = 1;
-  }
+  int s = calcStage(board);
 
   double aerr = 0;
   for (int i = 0; i < NUM_TUPLE; i++)
@@ -233,12 +231,7 @@ inline double calcAErr(const int *board)
 
 inline double calcMinAErr(const int *board)
 {
-  int s = 0;
-  for (int i = 0; i < 9; i++)
-  {
-    if (board[i] >= 9)
-      s = 1;
-  }
+  int s = calcStage(board);
 
   double minAerr = DBL_MAX;
   for (int i = 0; i < NUM_TUPLE; i++)
@@ -261,12 +254,7 @@ inline double calcMinAErr(const int *board)
 
 inline int calcMinCount(const int *board)
 {
-  int s = 0;
-  for (int i = 0; i < 9; i++)
-  {
-    if (board[i] >= 9)
-      s = 1;
-  }
+  int s = calcStage(board);
 
   int minCount = INT_MAX;
   for (int i = 0; i < NUM_TUPLE; i++)
@@ -290,12 +278,7 @@ inline int calcMinCount(const int *board)
 inline void update(const int *board, double diff)
 {
   diff = diff / NUM_TUPLE;
-  int s = 0;
-  for (int i = 0; i < 9; i++)
-  {
-    if (board[i] >= 9)
-      s = 1;
-  }
+  int s = calcStage(board);
 
   for (int i = 0; i < NUM_TUPLE; i++)
   {

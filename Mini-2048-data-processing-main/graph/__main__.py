@@ -41,19 +41,50 @@ def discover_data_dirs(root: Path, recursive: bool) -> list[Path]:
     return [d for d in root.iterdir() if d.is_dir()]
 
 
+def label_from_meta(data_dir: Path) -> str | None:
+    meta_path = data_dir / "meta.json"
+    if not meta_path.exists():
+        if data_dir.name == "PP":
+            return "PP"
+        return None
+    try:
+        meta = json.loads(meta_path.read_text("utf-8"))
+    except json.JSONDecodeError:
+        return None
+
+    tuple_v = meta.get("tuple")
+    sym = meta.get("sym")
+    seed = meta.get("seed")
+    stage = meta.get("stage")
+    if tuple_v is None or sym is None or seed is None:
+        return None
+
+    label = f"NT{tuple_v}_{sym}_s{seed}"
+    if stage is not None:
+        label += f"_st{stage}"
+    return label
+
+
 def get_config(board_data_dirs: list[Path]):
     if config_path.exists():
         config = read_config(config_path)
         for d in board_data_dirs:
             rel = d.relative_to(board_dir)
             key = make_safe_name(rel)
+            meta_label = label_from_meta(d)
+            default_label = meta_label if meta_label else str(rel)
             if key not in config:
                 config[key] = {
-                    "label": str(rel),
+                    "label": default_label,
                     "color": None,
                     "linestyle": "solid",
                     "order": 0,
                 }
+            else:
+                if meta_label:
+                    current_label = config[key].get("label")
+                    if current_label in (str(rel), key, None, ""):
+                        config[key]["label"] = meta_label
         # orderを追記したのでorder keyが存在しない場合
         for d in config.values():
             if "order" not in d:
@@ -61,7 +92,7 @@ def get_config(board_data_dirs: list[Path]):
     else:
         config = {
             make_safe_name(d.relative_to(board_dir)): {
-                "label": str(d.relative_to(board_dir)),
+                "label": (label_from_meta(d) or str(d.relative_to(board_dir))),
                 "color": None,
                 "linestyle": "solid",
             }

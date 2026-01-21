@@ -32,7 +32,9 @@ constexpr int ARRAY_LENGTH = (VARIATION_TILE * VARIATION_TILE * VARIATION_TILE *
 
 // ステージ判定用のヘルパー関数
 inline int calcStage(const int* board) {
-#ifdef EXPERIMENTAL_8STAGES
+#ifdef SINGLE_STAGE
+  return 0;
+#elif defined(EXPERIMENTAL_8STAGES)
   // 実験版: タイル合計値で等分
   int sum = 0;
   for (int i = 0; i < 9; i++) {
