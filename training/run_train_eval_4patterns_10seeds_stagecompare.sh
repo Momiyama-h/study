@@ -7,6 +7,7 @@ BASE_MINI="${BASE_MINI:-$REPO_ROOT/training}"
 BASE_NT="${BASE_NT:-$REPO_ROOT/Mini-2048-data-processing-main/NT}"
 LOG_ROOT="${LOG_ROOT:-/HDD/momiyama2/data/study/training_logs}"
 BOARD_DATA_PARENT="${BOARD_DATA_PARENT:-${BASE_NT}/../board_data}"
+NTUPLE_DAT_ROOT="${NTUPLE_DAT_ROOT:-/HDD/momiyama2/data/study/ntuple_dat}"
 
 SEEDS=(${SEEDS:-"15 16 17 18 19 20 21 22 23 24"})
 SEED_SPEC="${SEED_SPEC:-seed15-24}"
@@ -15,11 +16,10 @@ RUN_TS="${RUN_TS:-$(date +%Y%m%d_%H%M)}"
 PARALLEL="${PARALLEL:-8}"
 STDOUT_LOG="${STDOUT_LOG:-0}"
 EV_STAGE="${EV_STAGE:-9}"
+RUN_NAME_BASE="${RUN_NAME_BASE:-stage_compare_${SEED_SPEC}_g${GAME_COUNT}_${RUN_TS}}"
 STAGE_MODES_STR="${STAGE_MODES:-stage nostage}"
 STAGE_MODES_STR="${STAGE_MODES_STR//,/ }"
 read -r -a STAGE_MODES <<< "$STAGE_MODES_STR"
-
-DAT_ROOT_BASE="${DAT_ROOT_BASE:-/HDD/momiyama2/data/study/ntuple_dat/stage_compare/${SEED_SPEC}/g${GAME_COUNT}/${RUN_TS}}"
 
 compile_train() {
   local src="$1"
@@ -37,20 +37,24 @@ run_one() {
   local seed="$5"
   local stage_tag="$6"
   local play_bin="$7"
-  local dat_root="$8"
+  local run_name="$8"
 
-  mkdir -p "$dat_root" "$LOG_ROOT"
-  local log_file="${LOG_ROOT}/log_${tuple}tuple_${symmetry}_seed${seed}_${RUN_TS}__${stage_tag}.txt"
+  local dat_dir="${NTUPLE_DAT_ROOT}/${run_name}/seed${seed}/NT${tuple}_${symmetry}"
+  local log_dir="${LOG_ROOT}/${run_name}/seed${seed}/NT${tuple}_${symmetry}"
+  mkdir -p "$dat_dir" "$log_dir"
+  local log_file="${log_dir}/log_${tuple}tuple_${symmetry}_seed${seed}_${RUN_TS}__${stage_tag}.txt"
   echo "== Train: ${tuple}${symmetry} seed=${seed} stage=${stage_tag} ==" | tee "$log_file"
-  ( cd "$dat_root" && CSV_LOG_TAG="$stage_tag" "$train_bin" "$seed" ) 2>&1 | tee -a "$log_file"
-  local evfile="${dat_root}/${prefix}_${seed}_${EV_STAGE}.dat"
+  ( NTUPLE_DAT_ROOT="$NTUPLE_DAT_ROOT" CSV_LOG_TAG="$stage_tag" "$train_bin" "$seed" "$run_name" ) \
+    2>&1 | tee -a "$log_file"
+  local evfile="${dat_dir}/${prefix}_${seed}_${EV_STAGE}.dat"
   if [ ! -f "$evfile" ]; then
     echo "ERROR: evfile not found: $evfile" | tee -a "$log_file" >&2
     exit 1
   fi
-  local root="${BOARD_DATA_PARENT}/${RUN_TS}_${tuple}${symmetry}_seed${seed}_g${GAME_COUNT}__${stage_tag}"
+  local root="${BOARD_DATA_PARENT}/${run_name}/seed${seed}"
   echo "== Eval: BOARD_DATA_ROOT=${root} ==" | tee -a "$log_file"
-  BOARD_DATA_ROOT="$root" "$play_bin" "$seed" "$GAME_COUNT" "$evfile" "$symmetry" "$tuple" \
+  "$play_bin" "$seed" "$GAME_COUNT" "$evfile" "$symmetry" "$tuple" \
+    --run-name "$run_name" --board-root "$BOARD_DATA_PARENT" \
     2>&1 | tee -a "$log_file"
 
   local data_dir="${root}/NT${tuple}_${symmetry}"
@@ -99,7 +103,7 @@ for stage_mode in "${STAGE_MODES[@]}"; do
       ;;
   esac
 
-  dat_root="${DAT_ROOT_BASE}/${stage_tag}"
+  run_name="${RUN_NAME_BASE}__${stage_tag}"
 
   compile_train "$BASE_MINI/learning_ntuple_sym.cpp" "$BASE_MINI/learn_6sym${bin_suffix}" "$train_flags"
   compile_train "$BASE_MINI/learning_ntuple_notsym.cpp" "$BASE_MINI/learn_6notsym${bin_suffix}" "$train_flags"
@@ -112,10 +116,10 @@ for stage_mode in "${STAGE_MODES[@]}"; do
 
   JOBS=0
   for seed in "${SEEDS[@]}"; do
-    spawn_job 4 sym "$BASE_MINI/learn_4sym${bin_suffix}" "4tuple_sym_data" "$seed" "$stage_tag" "$BASE_NT/play_nt${bin_suffix}" "$dat_root"
-    spawn_job 4 notsym "$BASE_MINI/learn_4notsym${bin_suffix}" "4tuple_notsym_data" "$seed" "$stage_tag" "$BASE_NT/play_nt${bin_suffix}" "$dat_root"
-    spawn_job 6 sym "$BASE_MINI/learn_6sym${bin_suffix}" "6tuple_sym_data" "$seed" "$stage_tag" "$BASE_NT/play_nt${bin_suffix}" "$dat_root"
-    spawn_job 6 notsym "$BASE_MINI/learn_6notsym${bin_suffix}" "6tuple_notsym_data" "$seed" "$stage_tag" "$BASE_NT/play_nt${bin_suffix}" "$dat_root"
+    spawn_job 4 sym "$BASE_MINI/learn_4sym${bin_suffix}" "4tuple_sym_data" "$seed" "$stage_tag" "$BASE_NT/play_nt${bin_suffix}" "$run_name"
+    spawn_job 4 notsym "$BASE_MINI/learn_4notsym${bin_suffix}" "4tuple_notsym_data" "$seed" "$stage_tag" "$BASE_NT/play_nt${bin_suffix}" "$run_name"
+    spawn_job 6 sym "$BASE_MINI/learn_6sym${bin_suffix}" "6tuple_sym_data" "$seed" "$stage_tag" "$BASE_NT/play_nt${bin_suffix}" "$run_name"
+    spawn_job 6 notsym "$BASE_MINI/learn_6notsym${bin_suffix}" "6tuple_notsym_data" "$seed" "$stage_tag" "$BASE_NT/play_nt${bin_suffix}" "$run_name"
   done
   wait
   echo "== Completed stage_mode=${stage_tag} =="

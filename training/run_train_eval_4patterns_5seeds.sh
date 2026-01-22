@@ -5,14 +5,15 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 BASE_MINI="${BASE_MINI:-$REPO_ROOT/training}"
 BASE_NT="${BASE_NT:-$REPO_ROOT/Mini-2048-data-processing-main/NT}"
-DAT_ROOT="${DAT_ROOT:-/HDD/momiyama2/data/study/ntuple_dat}"
 LOG_ROOT="${LOG_ROOT:-/HDD/momiyama2/data/study/training_logs}"
 BOARD_DATA_PARENT="${BOARD_DATA_PARENT:-${BASE_NT}/../board_data}"
+NTUPLE_DAT_ROOT="${NTUPLE_DAT_ROOT:-/HDD/momiyama2/data/study/ntuple_dat}"
 
 SEEDS=(10 11 12 13 14)
 GAME_COUNT=100
 RUN_TS=$(date +%Y%m%d_%H%M)
 PARALLEL="${PARALLEL:-4}"
+RUN_NAME="${RUN_NAME:-${RUN_TS}}"
 
 echo "== Defaults check (training macros) =="
 if command -v rg >/dev/null 2>&1; then
@@ -51,18 +52,21 @@ run_one() {
   local prefix="$4"
   local seed="$5"
 
-  mkdir -p "$DAT_ROOT" "$LOG_ROOT"
-  local log_file="${LOG_ROOT}/log_${tuple}tuple_${symmetry}_seed${seed}_${RUN_TS}.txt"
+  local dat_dir="${NTUPLE_DAT_ROOT}/${RUN_NAME}/seed${seed}/NT${tuple}_${symmetry}"
+  local log_dir="${LOG_ROOT}/${RUN_NAME}/seed${seed}/NT${tuple}_${symmetry}"
+  mkdir -p "$dat_dir" "$log_dir"
+  local log_file="${log_dir}/log_${tuple}tuple_${symmetry}_seed${seed}_${RUN_TS}.txt"
   echo "== Train: ${tuple}${symmetry} seed=${seed} ==" | tee "$log_file"
-  ( cd "$DAT_ROOT" && "$train_bin" "$seed" ) 2>&1 | tee -a "$log_file"
-  local evfile="${DAT_ROOT}/${prefix}_${seed}_0.dat"
+  ( NTUPLE_DAT_ROOT="$NTUPLE_DAT_ROOT" "$train_bin" "$seed" "$RUN_NAME" ) 2>&1 | tee -a "$log_file"
+  local evfile="${dat_dir}/${prefix}_${seed}_0.dat"
   if [ ! -f "$evfile" ]; then
     echo "ERROR: evfile not found: $evfile" | tee -a "$log_file" >&2
     exit 1
   fi
-  local root="${BOARD_DATA_PARENT}/${RUN_TS}_${tuple}${symmetry}_seed${seed}_g${GAME_COUNT}"
+  local root="${BOARD_DATA_PARENT}/${RUN_NAME}/seed${seed}"
   echo "== Eval: BOARD_DATA_ROOT=${root} ==" | tee -a "$log_file"
-  BOARD_DATA_ROOT="$root" "$BASE_NT/play_nt" "$seed" "$GAME_COUNT" "$evfile" "$symmetry" "$tuple" \
+  "$BASE_NT/play_nt" "$seed" "$GAME_COUNT" "$evfile" "$symmetry" "$tuple" \
+    --run-name "$RUN_NAME" --board-root "$BOARD_DATA_PARENT" \
     2>&1 | tee -a "$log_file"
   echo | tee -a "$log_file"
 }
@@ -84,4 +88,3 @@ for seed in "${SEEDS[@]}"; do
   spawn_job 6 notsym "$BASE_MINI/learn_6notsym" "6tuple_notsym_data" "$seed"
 done
 wait
-

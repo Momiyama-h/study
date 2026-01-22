@@ -4,7 +4,10 @@
 #include <ctime>
 #include<cmath>
 #include <random>
+#include <filesystem>
+#include <string>
 using namespace std;
+namespace fs = std::filesystem;
 
 #include "Game2048_3_3.h"
 // #define NT4A  // Uncomment this line to use 4-tuples instead of 6-tuples
@@ -51,6 +54,8 @@ int storage_c = 0;
 int global_seed = 0;
 FILE *csv_fp = nullptr;
 FILE *board_log_fp = nullptr;
+static fs::path output_dir;
+static string run_name;
 
 // 追跡するタプルIDを指定（必要に応じて変更）
 #if defined(USE_4TUPLE) || defined(NT4A)
@@ -118,13 +123,14 @@ void openCsvLog()
   sprintf(filename, "tuple_learning_rate_log_notsym_seed%d_%04d%02d%02d%02d%02d%s.csv",
           global_seed, t->tm_year + 1900, t->tm_mon + 1, t->tm_mday,
           t->tm_hour, rounded_min, suffix);
-  
-  csv_fp = fopen(filename, "w");
+
+  fs::path csv_path = output_dir / filename;
+  csv_fp = fopen(csv_path.string().c_str(), "w");
   if (!csv_fp) {
-    fprintf(stderr, "Failed to open %s\n", filename);
+    fprintf(stderr, "Failed to open %s\n", csv_path.string().c_str());
     return;
   }
-  STDOUT_LOG("CSV log: %s\n", filename);
+  STDOUT_LOG("CSV log: %s\n", csv_path.string().c_str());
   // CSVヘッダー出力
   fprintf(csv_fp, "game_id,score,total_turns,stage,board_index,"
           "aerr_avg,aerr_std,err_avg,err_std,"
@@ -245,9 +251,10 @@ void saveEvs()
 #else
   sprintf(filename, "6tuple_notsym_data_%d_%d.dat", global_seed, storage_c++);
 #endif
-  FILE *fp = fopen(filename, "wb");
+  fs::path dat_path = output_dir / filename;
+  FILE *fp = fopen(dat_path.string().c_str(), "wb");
   if (!fp) {
-    fprintf(stderr, "file %s open failed.\n", filename);
+    fprintf(stderr, "file %s open failed.\n", dat_path.string().c_str());
   }
 #if defined(USE_4TUPLE) || defined(NT4A)
   writeEvs(fp);
@@ -255,17 +262,18 @@ void saveEvs()
   NT6_notsym::writeEvs(fp);
 #endif
   fclose(fp);
-  STDOUT_LOG("stored %s\n", filename);
+  STDOUT_LOG("stored %s\n", dat_path.string().c_str());
   if (storage_c == STORAGE_COUNT) exit(0);
 }
 
 int main(int argc, char* argv[])
 {
-  if (argc < 1+1) {
-    fprintf(stderr, "Usage: learning_ntuple <seed>\n");
+  if (argc < 1+2) {
+    fprintf(stderr, "Usage: learning_ntuple <seed> <run_name>\n");
     exit(1);
   }
   global_seed = atoi(argv[1]);
+  run_name = argv[2];
   srand(global_seed);
 
 #if defined(USE_4TUPLE) || defined(NT4A)
@@ -273,6 +281,20 @@ int main(int argc, char* argv[])
 #else
   NT6_notsym::initEvs(0);
 #endif
+
+  const char* base = getenv("NTUPLE_DAT_ROOT");
+  if (!base || !*base) {
+    base = "/HDD/momiyama2/data/study/ntuple_dat";
+  }
+#if defined(USE_4TUPLE) || defined(NT4A)
+  const char* tuple_dir = "NT4_notsym";
+#else
+  const char* tuple_dir = "NT6_notsym";
+#endif
+  output_dir =
+      fs::path(base) / run_name / ("seed" + to_string(global_seed)) / tuple_dir;
+  fs::create_directories(output_dir);
+
   openCsvLog();
   openBoardLog();
 

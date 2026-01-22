@@ -4,15 +4,14 @@ set -euo pipefail
 BASE_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 # Set these at runtime, e.g.
-# RUN_ID_5_9=20250201_1200 RUN_ID_10_14=20250201_1200 ./run_graphs_nostage_scatter_symdiff.sh
-RUN_ID_5_9="${RUN_ID_5_9:-}"
-RUN_ID_10_14="${RUN_ID_10_14:-}"
+# RUN_NAME_5_9=20250201_1200__nostage RUN_NAME_10_14=20250201_1200__nostage ./run_graphs_nostage_scatter_symdiff.sh
+RUN_NAME_5_9="${RUN_NAME_5_9:-}"
+RUN_NAME_10_14="${RUN_NAME_10_14:-}"
 ACC_DIFF_ORDER="${ACC_DIFF_ORDER:-sym-notsym}"
-RUN_SUFFIX="${RUN_SUFFIX:-__nostage}"
 
-if [ -z "$RUN_ID_5_9" ] || [ -z "$RUN_ID_10_14" ]; then
-  echo "ERROR: RUN_ID_5_9 and RUN_ID_10_14 must be set."
-  echo "Example: RUN_ID_5_9=20250201_1200 RUN_ID_10_14=20250201_1200 $0"
+if [ -z "$RUN_NAME_5_9" ] || [ -z "$RUN_NAME_10_14" ]; then
+  echo "ERROR: RUN_NAME_5_9 and RUN_NAME_10_14 must be set."
+  echo "Example: RUN_NAME_5_9=20250201_1200__nostage RUN_NAME_10_14=20250201_1200__nostage $0"
   exit 1
 fi
 
@@ -22,12 +21,12 @@ STAGE="${STAGE:-9}"
 SCATTER_GRAPHS=(scatter scatter_v2)
 COMPARE_GRAPHS=(acc-diff)
 
-run_id_for_seed() {
+run_name_for_seed() {
   local seed="$1"
   if [ "$seed" -le 9 ]; then
-    printf "%s" "$RUN_ID_5_9"
+    printf "%s" "$RUN_NAME_5_9"
   else
-    printf "%s" "$RUN_ID_10_14"
+    printf "%s" "$RUN_NAME_10_14"
   fi
 }
 
@@ -35,10 +34,10 @@ run_pair_graph() {
   local graph="$1"
   local seed="$2"
   local tuple="$3"
-  local run_id
-  run_id="$(run_id_for_seed "$seed")"
-  local sym_path="${run_id}_${tuple}sym_seed${seed}_g100${RUN_SUFFIX}/NT${tuple}_sym"
-  local notsym_path="${run_id}_${tuple}notsym_seed${seed}_g100${RUN_SUFFIX}/NT${tuple}_notsym"
+  local run_name
+  run_name="$(run_name_for_seed "$seed")"
+  local sym_path="${run_name}/seed${seed}/NT${tuple}_sym"
+  local notsym_path="${run_name}/seed${seed}/NT${tuple}_notsym"
 
   if [ "$graph" = "acc-diff" ]; then
     uv run -m graph "$graph" \

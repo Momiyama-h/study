@@ -35,8 +35,30 @@
 ## SINGLE_STAGE（マルチステージ無効）運用
 - 学習・評価を **1ステージ固定** にする場合は、学習/評価バイナリのコンパイル時に `-DSINGLE_STAGE` を付ける。
 - seed5〜14、4/6タプルの nostage 用一括スクリプトは `training/run_train_eval_4patterns_10seeds_nostage.sh`。
-- .dat の保存先は **ディレクトリ分離** で区別する（例: `${STUDY_DATA_ROOT}/ntuple_dat/nostage/seed5-14/g100/<RUN_TS>__nostage`）。
-- `board_data` の run_id も `__nostage` などの suffix を付けると追跡しやすい。
+- .dat の保存先は **run_name/seed/NT*_* の階層**で区別する（後述）。
+- `board_data` は `run_name` で識別し、`__nostage` などの suffix を付けると追跡しやすい。
+
+## 学習済みNタプル (.dat) の配置（新ルール）
+学習時に `<run_name>` を指定し、以下の階層に自動保存する。
+
+```
+${STUDY_DATA_ROOT}/ntuple_dat/<run_name>/seed<seed>/{NT4_sym|NT4_notsym|NT6_sym|NT6_notsym}/
+```
+
+例:
+- `${STUDY_DATA_ROOT}/ntuple_dat/20250201_1200__stage/seed15/NT6_sym/6tuple_sym_data_15_9.dat`
+- `${STUDY_DATA_ROOT}/ntuple_dat/20250201_1200__nostage/seed15/NT6_notsym/6tuple_notsym_data_15_9.dat`
+
+## 学習ログ (log_*.txt) の配置（新ルール）
+`<run_name>` を .dat と共有し、以下の階層に保存する。
+
+```
+${STUDY_DATA_ROOT}/training_logs/<run_name>/seed<seed>/{NT4_sym|NT4_notsym|NT6_sym|NT6_notsym}/
+```
+
+例:
+- `${STUDY_DATA_ROOT}/training_logs/20250201_1200__stage/seed15/NT6_sym/log_6tuple_sym_seed15_20250201_1200__stage.txt`
+- `${STUDY_DATA_ROOT}/training_logs/20250201_1200__nostage/seed15/NT6_notsym/log_6tuple_notsym_seed15_20250201_1200__nostage.txt`
 
 ## データ保存の基準パス（サーバ推奨）
 データのルート（推奨）:
@@ -58,20 +80,16 @@
 
 ---
 
-## run_id 規約（推奨）
-run 1回につきディレクトリ1つを作る。
+## board_data の配置（新ルール）
+board_data は `<run_name>` と seed を明示した階層で保存する。
+
+```
+${STUDY_DATA_ROOT}/board_data/<run_name>/seed<seed>/{NT4_sym|NT4_notsym|NT6_sym|NT6_notsym}/
+```
 
 例:
-- `20260120_1805_NT6_sym_seed9_g10000`
-- `20260120_1810_PP_seed1`
-
-生成例:
-```bash
-RUN_ID="$(date +%Y%m%d_%H%M%S)_exp1"
-mkdir -p "${STUDY_DATA_ROOT}/board_data/${RUN_ID}"
-mkdir -p "${STUDY_DATA_ROOT}/analysis_outputs/${RUN_ID}"
-echo "$RUN_ID"
-```
+- `${STUDY_DATA_ROOT}/board_data/20250201_1200__stage/seed15/NT6_sym/state.txt`
+- `${STUDY_DATA_ROOT}/board_data/20250201_1200__nostage/seed15/NT6_notsym/eval.txt`
 
 ## repo との連携（推奨）
 分析コードは `Mini-2048-data-processing-main/board_data` を参照するため、
@@ -86,16 +104,16 @@ ln -s "${STUDY_DATA_ROOT}/analysis_outputs" \
 ```
 
 ## run_id の対応
-- 学習・分析で同一の `run_id` を使うことを推奨（追跡・再現性のため）
+- 学習の `run_name` と分析の `run_id` を合わせると追跡が容易
 - 分析が学習の派生である場合は `run_id` を継承し、必要なら suffix を追加する  
-  例: `20260120_1805_NT6_sym_seed9_g10000__scatter`
+  例: `20250201_1200__stage__scatter`
 
 ## ローカル環境のデータ配置（推奨）
 - STUDY_DATA_ROOT=$HOME/study-data
 - 以下の構成を推奨
   - ${STUDY_DATA_ROOT}/ntuple_dat/  : 学習済み .dat
   - ${STUDY_DATA_ROOT}/training_logs/  : 学習ログ
-  - ${STUDY_DATA_ROOT}/board_data/<run_id>/     : state/after-state/eval/meta.json などの分析入力
+  - ${STUDY_DATA_ROOT}/board_data/<run_name>/seed<seed>/NT*_*/ : state/after-state/eval/meta.json などの分析入力
   - ${STUDY_DATA_ROOT}/analysis_outputs/<run_id>/ : 図・集計CSVなどの分析結果
 
 repo 側は symlink で接続する。
@@ -108,9 +126,8 @@ ln -s "${STUDY_DATA_ROOT}/analysis_outputs"   Mini-2048-data-processing-main/out
 ## 保存先一覧（要点）
 | データ | 保存先 |
 | --- | --- |
-| 学習済みNタプル (.dat) | ${STUDY_DATA_ROOT}/ntuple_dat/ |
+| 学習済みNタプル (.dat) | ${STUDY_DATA_ROOT}/ntuple_dat/<run_name>/seed<seed>/NT*_*/ |
 | 学習ログ | ${STUDY_DATA_ROOT}/training_logs/ |
-| state/after-state/eval | ${STUDY_DATA_ROOT}/board_data/<run_id>/ |
-| meta.json | ${STUDY_DATA_ROOT}/board_data/<run_id>/ |
+| state/after-state/eval | ${STUDY_DATA_ROOT}/board_data/<run_name>/seed<seed>/NT*_*/ |
+| meta.json | ${STUDY_DATA_ROOT}/board_data/<run_name>/seed<seed>/NT*_*/ |
 | 図・集計CSV | ${STUDY_DATA_ROOT}/analysis_outputs/<run_id>/ |
-

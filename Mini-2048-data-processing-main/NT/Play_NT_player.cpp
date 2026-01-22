@@ -44,7 +44,7 @@ int progress_calculation(int board[9]) {
 }
 int main(int argc, char** argv) {
   if (argc < 2 + 1) {
-    fprintf(stderr, "Usage: playgreedy <seed> <game_counts> <evfile> [sym|notsym] [4|6]\n");
+    fprintf(stderr, "Usage: playgreedy <seed> <game_counts> <evfile> [sym|notsym] [4|6] [--run-name NAME] [--board-root PATH]\n");
     exit(1);
   }
   int seed = atoi(argv[1]);
@@ -65,6 +65,8 @@ int main(int argc, char** argv) {
   bool number_set = false;
   bool symmetry_set = false;
   string symmetry = "sym";
+  string run_name;
+  string board_root;
   for (int i = 4; i < argc; i++) {
     string opt = argv[i];
     if (opt == "sym" || opt == "notsym") {
@@ -73,6 +75,22 @@ int main(int argc, char** argv) {
     } else if (opt == "4" || opt == "6") {
       number = opt;
       number_set = true;
+    } else if (opt == "--run-name") {
+      if (i + 1 >= argc) {
+        fprintf(stderr, "Error: --run-name requires a value\n");
+        exit(1);
+      }
+      run_name = argv[++i];
+    } else if (opt.rfind("--run-name=", 0) == 0) {
+      run_name = opt.substr(strlen("--run-name="));
+    } else if (opt == "--board-root") {
+      if (i + 1 >= argc) {
+        fprintf(stderr, "Error: --board-root requires a value\n");
+        exit(1);
+      }
+      board_root = argv[++i];
+    } else if (opt.rfind("--board-root=", 0) == 0) {
+      board_root = opt.substr(strlen("--board-root="));
     } else {
       fprintf(stderr, "Error: unknown option: %s\n", opt.c_str());
       exit(1);
@@ -99,6 +117,11 @@ int main(int argc, char** argv) {
   const char* base_env = getenv("BOARD_DATA_ROOT");
   if (base_env && *base_env) {
     base_root = base_env;
+  } else if (!board_root.empty()) {
+    base_root = board_root;
+  }
+  if (!run_name.empty() && (base_env == nullptr || !*base_env)) {
+    base_root = base_root + "/" + run_name + "/seed" + to_string(seed);
   }
   fs::create_directories(base_root);
   string dir = base_root + "/NT" + number + "_" + symmetry + "/";

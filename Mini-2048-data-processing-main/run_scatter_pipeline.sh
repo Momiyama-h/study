@@ -82,23 +82,28 @@ done
 # Create meta.json only if missing.
 STAGE="$STAGE" BOARD_DIR="$BOARD_DIR" WRITE_META="$WRITE_META" python3 - <<'PY'
 from pathlib import Path
-import os, re, subprocess
+import os
+import subprocess
 
 board = Path(os.environ["BOARD_DIR"])
 write_meta = os.environ["WRITE_META"]
 stage = os.environ["STAGE"]
-pat = re.compile(r"_([46])(sym|notsym)_seed(\d+)_g")
 
-for run in board.glob("*/*"):
+for run in board.glob("*/*/NT*_*"):
     if not run.is_dir():
         continue
     meta = run / "meta.json"
     if meta.exists():
         continue
-    m = pat.search(run.parent.name)
-    if not m:
+    seed_dir = run.parent.name
+    if not seed_dir.startswith("seed"):
         continue
-    tuple_num, sym, seed = m.groups()
+    seed = seed_dir.replace("seed", "")
+    nt_name = run.name  # NT4_sym / NT6_notsym
+    if not nt_name.startswith("NT"):
+        continue
+    tuple_num = nt_name[2]
+    sym = nt_name.split("_", 1)[1]
     evfile = f"{tuple_num}tuple_{sym}_data_{seed}_{stage}.dat"
     subprocess.run(
         ["python3", write_meta, "--board-dir", str(board), str(run), evfile],
@@ -124,7 +129,7 @@ while IFS= read -r -d '' d; do
     continue
   fi
   ( cd "$PERF_DIR" && ./eval_after_state_pp "$rel" )
-done < <(find "$BOARD_DIR" -mindepth 2 -maxdepth 2 -type d -print0)
+done < <(find "$BOARD_DIR" -mindepth 3 -maxdepth 3 -type d -print0)
 
 if (( DO_SYNC )); then
   ( cd "$ROOT" && uv sync )
