@@ -44,8 +44,14 @@
   - --ev-stages LIST（例: 9 または 0,1,2）
 - オプション:
   - --force-meta: meta.json の不一致を検出した場合に上書き再生成
+  - --overwrite: 既存の board_data を削除して再生成
+  - --single-stage / --nostage: stage0 固定で評価（play_nt_ns を使用）
+- 備考:
+  - play_nt が無い場合は自動ビルド
+  - play_nt_ns が無い場合は -DSINGLE_STAGE で自動ビルド
 - 例:
   - ./training/run_make_board_data_from_dat.sh --run-name 20260123_0300__stage --seed-start 5 --seed-end 14 --ev-stages 9
+  - ./training/run_make_board_data_from_dat.sh --run-name 20260123_0300__nostage --seed-start 5 --seed-end 14 --ev-stages 9 --nostage --overwrite
 
 ### run_plot_scores_stagecompare.sh
 - 目的: 学習ログから seed別のスコア推移グラフを出力

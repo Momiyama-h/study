@@ -64,6 +64,11 @@ if [ ! -d "$TARGET_ROOT" ]; then
 fi
 
 count=0
+count_file="$(mktemp)"
+cleanup() {
+  rm -f "$count_file"
+}
+trap cleanup EXIT
 JOBS=0
 
 run_one() {
@@ -112,7 +117,7 @@ run_one() {
     mv -f "$state_path" "$local_state"
     mv -f "$after_path" "$local_after"
   fi
-  count=$((count+1))
+  printf '%s\n' "$rel" >> "$count_file"
 }
 
 spawn_job() {
@@ -129,4 +134,5 @@ while IFS= read -r -d '' d; do
 done < <(find "$TARGET_ROOT" -mindepth 2 -maxdepth 2 -type d -name "NT*_*" -print0)
 wait
 
+count="$(wc -l < "$count_file" | tr -d ' ')"
 echo "Done. processed=${count}"
