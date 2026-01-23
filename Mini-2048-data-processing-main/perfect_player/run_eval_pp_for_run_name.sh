@@ -88,11 +88,23 @@ while IFS= read -r -d '' d; do
     fi
   fi
 
-  ( cd "$SCRIPT_DIR" && ./eval_state_pp "$rel" )
-  ( cd "$SCRIPT_DIR" && ./eval_after_state_pp "$rel" )
+  if ! state_report="$(cd "$SCRIPT_DIR" && ./eval_state_pp "$rel")"; then
+    echo "ERROR: eval_state_pp failed for $rel" >&2
+    exit 1
+  fi
+  if ! after_report="$(cd "$SCRIPT_DIR" && ./eval_after_state_pp "$rel")"; then
+    echo "ERROR: eval_after_state_pp failed for $rel" >&2
+    exit 1
+  fi
+
+  state_path="$(printf "%s\n" "$state_report" | awk '/Results saved to/{print $NF}' | tail -n1)"
+  after_path="$(printf "%s\n" "$after_report" | awk '/Results saved to/{print $NF}' | tail -n1)"
+  [ -n "$state_path" ] || state_path="$out_state"
+  [ -n "$after_path" ] || after_path="$out_after"
+
   if [ "$OUTPUT_MODE" = "per-nt" ]; then
-    mv -f "$out_state" "$local_state"
-    mv -f "$out_after" "$local_after"
+    mv -f "$state_path" "$local_state"
+    mv -f "$after_path" "$local_after"
   fi
   count=$((count+1))
 done < <(find "$TARGET_ROOT" -mindepth 2 -maxdepth 2 -type d -name "NT*_*" -print0)
