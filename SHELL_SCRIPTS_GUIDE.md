@@ -61,13 +61,14 @@
 - 目的: uv graph を実行し、analysis_outputs に保存
 - 出力先:
   - /HDD/momiyama2/data/study/analysis_outputs/<run_name>/NT{4|6}/{graph}/{sym|notsym}/
-  - graph側の --run-name を使って直接保存（output/ への移動は不要）
+  - graph側の --output-dir を使って直接保存（output/ への移動は不要）
 - デフォルト: seedごとに個別出力（複数seed指定時も分割）
   - まとめる場合は --combine-seeds を指定
+- --parallel N で並列実行が可能
 - 出力ファイル名は --output-name のベース名にプレイヤ名が付く（scatterの仕様）
   - 例: scatter_stage9_20260123_0300__stage__seed5__NT4_sym.png
 - 例:
-  - ./run_scatter_for_run_name.sh --run-name 20260123_0300__stage --seed-start 5 --seed-end 14 --stage 9 --output-name scatter_stage9
+  - ./run_scatter_for_run_name.sh --run-name 20260123_0300__stage --seed-start 5 --seed-end 14 --stage 9 --output-name scatter_stage9 --parallel 8
 
 ### run_scatter_pipeline.sh
 - 目的: meta.json 生成（不足分のみ）→ PP評価 → グラフ出力

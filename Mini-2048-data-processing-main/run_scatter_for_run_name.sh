@@ -17,6 +17,7 @@ Options:
   --tuples LIST        comma-separated tuples (default: 4,6)
   --sym-list LIST      comma-separated sym list (default: sym,notsym)
   --graph NAME         analysis type (default: scatter)
+  --parallel N         max parallel jobs (default: nproc)
 USAGE
 }
 
@@ -30,6 +31,7 @@ STAGE=""
 TUPLES="4,6"
 SYM_LIST="sym,notsym"
 GRAPH="scatter"
+PARALLEL="$(nproc)"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -43,6 +45,7 @@ while [[ $# -gt 0 ]]; do
     --tuples) TUPLES="$2"; shift 2;;
     --sym-list) SYM_LIST="$2"; shift 2;;
     --graph) GRAPH="$2"; shift 2;;
+    --parallel) PARALLEL="$2"; shift 2;;
     -h|--help) usage; exit 0;;
     *) echo "Unknown option: $1"; usage; exit 1;;
   esac
@@ -67,19 +70,20 @@ EXT="${EXT#.}"
 IFS=',' read -r -a TUPLE_ARR <<< "$TUPLES"
 IFS=',' read -r -a SYM_ARR <<< "$SYM_LIST"
 
+JOBS=0
+
 run_scatter() {
   local tuple="$1"
   local sym="$2"
-  local seed_tag="$3"
-  shift 3
+  shift 2
   local seed_args=("$@")
 
   local out_dir="$OUT_BASE/$RUN_NAME/NT${tuple}/${GRAPH}/${sym}"
   mkdir -p "$out_dir"
 
   local output_file="${OUTPUT_NAME}.${EXT}"
-  local output_stem="${output_file%.*}"
-  local cmd=(uv run -m graph "$GRAPH" --recursive --intersection "$RUN_NAME" --output "$output_file" --run-name "$RUN_NAME")
+  local cmd=(uv run -m graph "$GRAPH" --recursive --intersection "$RUN_NAME" \
+    --output "$output_file" --output-dir "$out_dir")
   cmd+=(--tuple "$tuple" --sym "$sym")
   if [ -n "$STAGE" ]; then
     cmd+=(--stage "$STAGE")
@@ -89,52 +93,45 @@ run_scatter() {
   fi
 
   ( cd "$REPO" && "${cmd[@]}" )
-  shopt -s nullglob
-  matches=("$REPO/output/${output_stem}_"*".${EXT}")
-  if [ ${#matches[@]} -gt 0 ]; then
-    for f in "${matches[@]}"; do
-      mv -f "$f" "$out_dir/$(basename "$f")"
-      echo "Saved: $out_dir/$(basename "$f")"
-    done
-  elif [ -f "$REPO/output/$output_file" ]; then
-    mv -f "$REPO/output/$output_file" "$out_dir/$output_file"
-    echo "Saved: $out_dir/$output_file"
-  else
-    echo "ERROR: output not found: $REPO/output/${output_stem}_*.${EXT}" >&2
-    shopt -u nullglob
-    return 1
+  echo "Saved: $out_dir (by --output-dir)"
+}
+
+spawn_job() {
+  run_scatter "$@" &
+  JOBS=$((JOBS+1))
+  if [ "$JOBS" -ge "$PARALLEL" ]; then
+    wait -n
+    JOBS=$((JOBS-1))
   fi
-  shopt -u nullglob
 }
 
 if [ -n "$SEED_START" ] && [ -n "$SEED_END" ]; then
   if [ "$COMBINE_SEEDS" -eq 1 ]; then
-    seed_tag="seed${SEED_START}-${SEED_END}"
     seed_args=()
     for ((s=SEED_START; s<=SEED_END; s++)); do
       seed_args+=(--seed "$s")
     done
     for tuple in "${TUPLE_ARR[@]}"; do
       for sym in "${SYM_ARR[@]}"; do
-        run_scatter "$tuple" "$sym" "$seed_tag" "${seed_args[@]}"
+        spawn_job "$tuple" "$sym" "${seed_args[@]}"
       done
     done
   else
     for ((s=SEED_START; s<=SEED_END; s++)); do
-      seed_tag="seed${s}"
       seed_args=(--seed "$s")
       for tuple in "${TUPLE_ARR[@]}"; do
         for sym in "${SYM_ARR[@]}"; do
-          run_scatter "$tuple" "$sym" "$seed_tag" "${seed_args[@]}"
+          spawn_job "$tuple" "$sym" "${seed_args[@]}"
         done
       done
     done
   fi
 else
-  seed_tag="allseeds"
   for tuple in "${TUPLE_ARR[@]}"; do
     for sym in "${SYM_ARR[@]}"; do
-      run_scatter "$tuple" "$sym" "$seed_tag"
+      spawn_job "$tuple" "$sym"
     done
   done
 fi
+
+wait
