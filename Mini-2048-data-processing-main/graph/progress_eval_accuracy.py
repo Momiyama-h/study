@@ -72,7 +72,9 @@ def create_progress_eval_accuracy_plot(
         perfect_eval_files, player_eval_files
     ):
         # プレイヤーごとのデータを読み込み
-        perfect_eval_and_hand_progress (= get_eval_and_hand_progressperfect_eval_file)
+        perfect_eval_and_hand_progress = get_eval_and_hand_progress(
+            perfect_eval_file
+        )
         player_eval_and_hand_progress = get_eval_and_hand_progress(player_eval_file)
 
         # model_nameをconfigから取得
