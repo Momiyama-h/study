@@ -63,6 +63,8 @@
   - /HDD/momiyama2/data/study/analysis_outputs/<run_name>/NT{4|6}/{graph}/{sym|notsym}/
 - デフォルト: seedごとに個別出力（複数seed指定時も分割）
   - まとめる場合は --combine-seeds を指定
+- 出力ファイル名は --output-name のベース名にプレイヤ名が付く（scatterの仕様）
+  - 例: scatter_stage9_20260123_0300__stage__seed5__NT4_sym.png
 - 例:
   - ./run_scatter_for_run_name.sh --run-name 20260123_0300__stage --seed-start 5 --seed-end 14 --stage 9 --output-name scatter_stage9
 
@@ -91,6 +93,7 @@
 - 目的: run_name 配下の board_data から eval-state / eval-after-state を作成
 - デフォルト出力: per-nt（board_data/<run_name>/seed<seed>/NT*_/eval-*.txt）
 - --output-mode pp を指定すると board_data/PP/ に安全名で出力
+- --parallel N で並列数を指定可能（デフォルト: nproc）
 - 例:
   - ./perfect_player/run_eval_pp_for_run_name.sh --run-name 20260123_0300__stage
 

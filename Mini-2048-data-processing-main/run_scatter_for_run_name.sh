@@ -77,7 +77,8 @@ run_scatter() {
   local out_dir="$OUT_BASE/$RUN_NAME/NT${tuple}/${GRAPH}/${sym}"
   mkdir -p "$out_dir"
 
-  local output_file="${OUTPUT_NAME}_${seed_tag}_NT${tuple}_${sym}.${EXT}"
+  local output_file="${OUTPUT_NAME}.${EXT}"
+  local output_stem="${output_file%.*}"
   local cmd=(uv run -m graph "$GRAPH" --recursive --intersection "$RUN_NAME" --output "$output_file")
   cmd+=(--tuple "$tuple" --sym "$sym")
   if [ -n "$STAGE" ]; then
@@ -88,8 +89,22 @@ run_scatter() {
   fi
 
   ( cd "$REPO" && "${cmd[@]}" )
-  mv -f "$REPO/output/$output_file" "$out_dir/$output_file"
-  echo "Saved: $out_dir/$output_file"
+  shopt -s nullglob
+  matches=("$REPO/output/${output_stem}_"*".${EXT}")
+  if [ ${#matches[@]} -gt 0 ]; then
+    for f in "${matches[@]}"; do
+      mv -f "$f" "$out_dir/$(basename "$f")"
+      echo "Saved: $out_dir/$(basename "$f")"
+    done
+  elif [ -f "$REPO/output/$output_file" ]; then
+    mv -f "$REPO/output/$output_file" "$out_dir/$output_file"
+    echo "Saved: $out_dir/$output_file"
+  else
+    echo "ERROR: output not found: $REPO/output/${output_stem}_*.${EXT}" >&2
+    shopt -u nullglob
+    return 1
+  fi
+  shopt -u nullglob
 }
 
 if [ -n "$SEED_START" ] && [ -n "$SEED_END" ]; then

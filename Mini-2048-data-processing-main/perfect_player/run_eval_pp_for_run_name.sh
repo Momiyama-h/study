@@ -11,7 +11,8 @@ Options:
   --board-root PATH   board_data root (default: ../board_data)
   --output-mode MODE  output location: per-nt (default) or pp
   --force             overwrite existing eval files
-  -h, --help         show this help
+  --parallel N        max parallel jobs (default: nproc)
+  -h, --help          show this help
 USAGE
 }
 
@@ -19,6 +20,7 @@ RUN_NAME=""
 BOARD_ROOT=""
 OUTPUT_MODE="per-nt"
 FORCE=0
+PARALLEL="$(nproc)"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -26,6 +28,7 @@ while [[ $# -gt 0 ]]; do
     --board-root) BOARD_ROOT="$2"; shift 2;;
     --output-mode) OUTPUT_MODE="$2"; shift 2;;
     --force) FORCE=1; shift;;
+    --parallel) PARALLEL="$2"; shift 2;;
     -h|--help) usage; exit 0;;
     *) echo "Unknown option: $1"; usage; exit 1;;
   esac
@@ -61,13 +64,16 @@ if [ ! -d "$TARGET_ROOT" ]; then
 fi
 
 count=0
-while IFS= read -r -d '' d; do
+JOBS=0
+
+run_one() {
+  local d="$1"
   d_real="$(readlink -f "$d")"
   case "$d_real" in
     "$BOARD_ROOT_REAL"/*) ;;
     *)
       echo "WARN: skip (outside board_root): $d_real" >&2
-      continue
+      return 0
       ;;
   esac
   rel="${d_real#$BOARD_ROOT_REAL/}"
@@ -80,21 +86,21 @@ while IFS= read -r -d '' d; do
 
   if [ "$OUTPUT_MODE" = "per-nt" ]; then
     if [ "$FORCE" -eq 0 ] && [ -f "$local_state" ] && [ -f "$local_after" ]; then
-      continue
+      return 0
     fi
   else
     if [ "$FORCE" -eq 0 ] && [ -f "$out_state" ] && [ -f "$out_after" ]; then
-      continue
+      return 0
     fi
   fi
 
   if ! state_report="$(cd "$SCRIPT_DIR" && ./eval_state_pp "$rel")"; then
     echo "ERROR: eval_state_pp failed for $rel" >&2
-    exit 1
+    return 1
   fi
   if ! after_report="$(cd "$SCRIPT_DIR" && ./eval_after_state_pp "$rel")"; then
     echo "ERROR: eval_after_state_pp failed for $rel" >&2
-    exit 1
+    return 1
   fi
 
   state_path="$(printf "%s\n" "$state_report" | awk '/Results saved to/{print $NF}' | tail -n1)"
@@ -107,6 +113,20 @@ while IFS= read -r -d '' d; do
     mv -f "$after_path" "$local_after"
   fi
   count=$((count+1))
+}
+
+spawn_job() {
+  run_one "$1" &
+  JOBS=$((JOBS+1))
+  if [ "$JOBS" -ge "$PARALLEL" ]; then
+    wait -n
+    JOBS=$((JOBS-1))
+  fi
+}
+
+while IFS= read -r -d '' d; do
+  spawn_job "$d"
 done < <(find "$TARGET_ROOT" -mindepth 2 -maxdepth 2 -type d -name "NT*_*" -print0)
+wait
 
 echo "Done. processed=${count}"
