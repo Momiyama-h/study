@@ -18,6 +18,9 @@ Options:
   --board-root PATH  board_data root (default: /HDD/momiyama2/data/study/board_data)
   --dat-root PATH    ntuple_dat root (default: /HDD/momiyama2/data/study/ntuple_dat)
   --force-meta       overwrite meta.json when mismatch is detected
+  --overwrite        remove existing board_data files before generating
+  --single-stage     force stage0 only (nostage) and use play_nt_ns
+  --nostage          same as --single-stage
 USAGE
 }
 
@@ -32,6 +35,8 @@ PARALLEL="$(nproc)"
 BOARD_ROOT="/HDD/momiyama2/data/study/board_data"
 DAT_ROOT="/HDD/momiyama2/data/study/ntuple_dat"
 FORCE_META=0
+OVERWRITE=0
+SINGLE_STAGE=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -46,6 +51,8 @@ while [[ $# -gt 0 ]]; do
     --board-root) BOARD_ROOT="$2"; shift 2;;
     --dat-root) DAT_ROOT="$2"; shift 2;;
     --force-meta) FORCE_META=1; shift;;
+    --overwrite) OVERWRITE=1; shift;;
+    --single-stage|--nostage) SINGLE_STAGE=1; shift;;
     -h|--help) usage; exit 0;;
     *) echo "Unknown option: $1"; usage; exit 1;;
   esac
@@ -55,13 +62,19 @@ if [[ -z "$RUN_NAME" || -z "$SEED_START" || -z "$SEED_END" || -z "$EV_STAGES" ]]
   echo "ERROR: --run-name/--seed-start/--seed-end/--ev-stages are required." >&2
   exit 1
 fi
+if [[ "$RUN_NAME" == *nostage* ]]; then
+  SINGLE_STAGE=1
+fi
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 BASE_NT="${BASE_NT:-$REPO_ROOT/Mini-2048-data-processing-main/NT}"
 
 if [ ! -x "$BASE_NT/play_nt" ]; then
-  ( cd "$BASE_NT" && g++ Play_NT_player.cpp -O2 -std=c++20 -o play_nt )
+  ( cd "$BASE_NT" && g++ Play_NT_player.cpp -O3 -std=c++20 -o play_nt )
+fi
+if [ ! -x "$BASE_NT/play_nt_ns" ]; then
+  ( cd "$BASE_NT" && g++ Play_NT_player.cpp -O3 -std=c++20 -DSINGLE_STAGE -o play_nt_ns )
 fi
 
 IFS=',' read -r -a TUPLE_ARR <<< "$TUPLES"
@@ -80,10 +93,21 @@ run_one() {
     echo "MISSING: $evfile" >&2
     return 1
   fi
-  "$BASE_NT/play_nt" "$seed" "$GAME_COUNT" "$evfile" "$sym" "$tuple" \
-    --run-name "$RUN_NAME" --board-root "$BOARD_ROOT"
-
+  local play_args=()
+  if [ "$SINGLE_STAGE" -eq 1 ]; then
+    play_args+=(--single-stage)
+  fi
   local data_dir="${BOARD_ROOT}/${RUN_NAME}/seed${seed}/NT${tuple}_${sym}"
+  if [ "$OVERWRITE" -eq 1 ]; then
+    rm -rf "$data_dir"
+  fi
+  local player_bin="$BASE_NT/play_nt"
+  if [ "$SINGLE_STAGE" -eq 1 ]; then
+    player_bin="$BASE_NT/play_nt_ns"
+  fi
+  "$player_bin" "$seed" "$GAME_COUNT" "$evfile" "$sym" "$tuple" \
+    --run-name "$RUN_NAME" --board-root "$BOARD_ROOT" "${play_args[@]}"
+
   local write_meta="${REPO_ROOT}/Mini-2048-data-processing-main/write_meta.py"
   if [ -f "$write_meta" ] && [ -d "$data_dir" ]; then
     local meta_path="${data_dir}/meta.json"

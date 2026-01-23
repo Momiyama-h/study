@@ -42,9 +42,70 @@ int progress_calculation(int board[9]) {
   }
   return sum / 2;
 }
+
+static double calcEv_stage0_nt4_sym(const int* board) {
+  const int s = 0;
+  double ev = 0;
+  for (int i = 0; i < NT4::NUM_TUPLE; i++) {
+    for (int j = 0; j < 8; j++) {
+      int index = 0;
+      for (int k = 0; k < NT4::TUPLE_SIZE; k++) {
+        index = index * NT4::VARIATION_TILE +
+                board[NT4::sympos[j][NT4::pos[i][k]]];
+      }
+      ev += NT4::evs[s][i][index];
+    }
+  }
+  return ev;
+}
+
+static double calcEv_stage0_nt6_sym(const int* board) {
+  const int s = 0;
+  double ev = 0;
+  for (int i = 0; i < NT6::NUM_TUPLE; i++) {
+    for (int j = 0; j < 8; j++) {
+      int index = 0;
+      for (int k = 0; k < NT6::TUPLE_SIZE; k++) {
+        index = index * NT6::VARIATION_TILE +
+                board[NT6::sympos[j][NT6::pos[i][k]]];
+      }
+      ev += NT6::evs[s][i][index];
+    }
+  }
+  return ev;
+}
+
+static double calcEv_stage0_nt4_notsym(const int* board) {
+  const int s = 0;
+  double ev = 0;
+  for (int i = 0; i < NT4_notsym::NUM_TUPLE; i++) {
+    const int j = 0;
+    int index = 0;
+    for (int k = 0; k < NT4_notsym::TUPLE_SIZE; k++) {
+      index = index * NT4_notsym::VARIATION_TILE +
+              board[NT4_notsym::sympos[j][NT4_notsym::pos[i][k]]];
+    }
+    ev += NT4_notsym::evs[s][i][index];
+  }
+  return ev;
+}
+
+static double calcEv_stage0_nt6_notsym(const int* board) {
+  const int s = 0;
+  double ev = 0;
+  for (int i = 0; i < NT6_notsym::NUM_TUPLE; i++) {
+    int index = 0;
+    for (int k = 0; k < NT6_notsym::TUPLE_SIZE; k++) {
+      index = index * NT6_notsym::VARIATION_TILE +
+              board[NT6_notsym::pos[i][k]];
+    }
+    ev += NT6_notsym::evs[s][i][index];
+  }
+  return ev;
+}
 int main(int argc, char** argv) {
   if (argc < 2 + 1) {
-    fprintf(stderr, "Usage: playgreedy <seed> <game_counts> <evfile> [sym|notsym] [4|6] [--run-name NAME] [--board-root PATH]\n");
+    fprintf(stderr, "Usage: playgreedy <seed> <game_counts> <evfile> [sym|notsym] [4|6] [--run-name NAME] [--board-root PATH] [--single-stage|--nostage]\n");
     exit(1);
   }
   int seed = atoi(argv[1]);
@@ -67,6 +128,7 @@ int main(int argc, char** argv) {
   string symmetry = "sym";
   string run_name;
   string board_root;
+  bool single_stage = false;
   for (int i = 4; i < argc; i++) {
     string opt = argv[i];
     if (opt == "sym" || opt == "notsym") {
@@ -91,9 +153,16 @@ int main(int argc, char** argv) {
       board_root = argv[++i];
     } else if (opt.rfind("--board-root=", 0) == 0) {
       board_root = opt.substr(strlen("--board-root="));
+    } else if (opt == "--single-stage" || opt == "--nostage") {
+      single_stage = true;
     } else {
       fprintf(stderr, "Error: unknown option: %s\n", opt.c_str());
       exit(1);
+    }
+  }
+  if (!single_stage && !run_name.empty()) {
+    if (run_name.find("nostage") != string::npos) {
+      single_stage = true;
     }
   }
   if (!symmetry_set) {
@@ -172,15 +241,19 @@ int main(int argc, char** argv) {
           // int index = to_index(copy.board);
           if (number == "4") {
             if (symmetry == "sym") {
-              evals[d] = NT4::calcEv(copy.board);
+              evals[d] = single_stage ? calcEv_stage0_nt4_sym(copy.board)
+                                      : NT4::calcEv(copy.board);
             } else {
-              evals[d] = NT4_notsym::calcEv(copy.board);
+              evals[d] = single_stage ? calcEv_stage0_nt4_notsym(copy.board)
+                                      : NT4_notsym::calcEv(copy.board);
             }
           } else {
             if (symmetry == "sym") {
-              evals[d] = NT6::calcEv(copy.board);
+              evals[d] = single_stage ? calcEv_stage0_nt6_sym(copy.board)
+                                      : NT6::calcEv(copy.board);
             } else {
-              evals[d] = NT6_notsym::calcEv(copy.board);
+              evals[d] = single_stage ? calcEv_stage0_nt6_notsym(copy.board)
+                                      : NT6_notsym::calcEv(copy.board);
             }
           }
           // printf("%f ",evals[d]);
