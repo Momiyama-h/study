@@ -22,7 +22,7 @@ compile_train() {
   local out="$2"
   local extra="${3:-}"
   echo "Compile: $src -> $out $extra"
-  g++ "$src" -O2 -std=c++20 $extra -o "$out"
+  g++ "$src" -O3 -std=c++20 $extra -o "$out"
 }
 
 run_one() {
