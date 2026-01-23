@@ -218,6 +218,17 @@ arg_parser.add_argument(
     action="store_true",
     help="グラフ作成完了時に表示する。",
 )
+
+arg_parser.add_argument(
+    "--output-dir",
+    type=str,
+    help="出力先ディレクトリを指定する。",
+)
+arg_parser.add_argument(
+    "--run-name",
+    type=str,
+    help="analysis_outputs/<run_name> に出力する（--output-dir が優先）。",
+)
 arg_parser.add_argument(
     "--acc-diff-order",
     choices=["input", "sym-notsym", "notsym-sym"],
@@ -285,7 +296,11 @@ exclude_match = re.compile("|".join(args.exclude + ["sample"]))
 intersection_match = re.compile("|".join(args.intersection))
 board_data_dirs = discover_data_dirs(board_dir, args.recursive)
 output_dir = BASE_DIR.parent / "output"
-output_dir.mkdir(exist_ok=True)
+if args.output_dir:
+    output_dir = Path(args.output_dir)
+elif args.run_name:
+    output_dir = Path("/HDD/momiyama2/data/study/analysis_outputs") / args.run_name
+output_dir.mkdir(parents=True, exist_ok=True)
 
 config_path = BASE_DIR / "config.json"
 config = get_config(board_data_dirs)

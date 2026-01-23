@@ -79,7 +79,7 @@ run_scatter() {
 
   local output_file="${OUTPUT_NAME}.${EXT}"
   local output_stem="${output_file%.*}"
-  local cmd=(uv run -m graph "$GRAPH" --recursive --intersection "$RUN_NAME" --output "$output_file")
+  local cmd=(uv run -m graph "$GRAPH" --recursive --intersection "$RUN_NAME" --output "$output_file" --run-name "$RUN_NAME")
   cmd+=(--tuple "$tuple" --sym "$sym")
   if [ -n "$STAGE" ]; then
     cmd+=(--stage "$STAGE")

@@ -61,6 +61,7 @@
 - 目的: uv graph を実行し、analysis_outputs に保存
 - 出力先:
   - /HDD/momiyama2/data/study/analysis_outputs/<run_name>/NT{4|6}/{graph}/{sym|notsym}/
+  - graph側の --run-name を使って直接保存（output/ への移動は不要）
 - デフォルト: seedごとに個別出力（複数seed指定時も分割）
   - まとめる場合は --combine-seeds を指定
 - 出力ファイル名は --output-name のベース名にプレイヤ名が付く（scatterの仕様）
