@@ -37,11 +37,13 @@
 
 ### run_make_board_data_from_dat.sh
 - 目的: 既存 .dat から board_data を作成
-- デフォルト: game_count=10000、meta.json は不足分のみ作成
+- デフォルト: game_count=10000、meta.json は不足分のみ作成（不一致時は警告のみ）
 - 必須引数:
   - --run-name NAME
   - --seed-start N --seed-end N
   - --ev-stages LIST（例: 9 または 0,1,2）
+- オプション:
+  - --force-meta: meta.json の不一致を検出した場合に上書き再生成
 - 例:
   - ./training/run_make_board_data_from_dat.sh --run-name 20260123_0300__stage --seed-start 5 --seed-end 14 --ev-stages 9
 

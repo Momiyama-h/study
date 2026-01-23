@@ -17,6 +17,7 @@ Options:
   --parallel N       max parallel jobs (default: nproc)
   --board-root PATH  board_data root (default: /HDD/momiyama2/data/study/board_data)
   --dat-root PATH    ntuple_dat root (default: /HDD/momiyama2/data/study/ntuple_dat)
+  --force-meta       overwrite meta.json when mismatch is detected
 USAGE
 }
 
@@ -30,6 +31,7 @@ GAME_COUNT=10000
 PARALLEL="$(nproc)"
 BOARD_ROOT="/HDD/momiyama2/data/study/board_data"
 DAT_ROOT="/HDD/momiyama2/data/study/ntuple_dat"
+FORCE_META=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -43,6 +45,7 @@ while [[ $# -gt 0 ]]; do
     --parallel) PARALLEL="$2"; shift 2;;
     --board-root) BOARD_ROOT="$2"; shift 2;;
     --dat-root) DAT_ROOT="$2"; shift 2;;
+    --force-meta) FORCE_META=1; shift;;
     -h|--help) usage; exit 0;;
     *) echo "Unknown option: $1"; usage; exit 1;;
   esac
@@ -86,6 +89,40 @@ run_one() {
     local meta_path="${data_dir}/meta.json"
     if [ ! -f "$meta_path" ]; then
       python3 "$write_meta" --board-dir "$BOARD_ROOT" "$data_dir" "$evfile"
+    else
+      python3 - "$meta_path" "$(basename "$evfile")" "$seed" "$stage" "$tuple" "$sym" <<'PY'
+import json
+import sys
+
+meta_path, evfile, seed, stage, tuple_num, sym = sys.argv[1:7]
+seed = int(seed)
+stage = int(stage)
+tuple_num = int(tuple_num)
+ok = True
+try:
+    data = json.load(open(meta_path, "r", encoding="utf-8"))
+except Exception as e:
+    print(f"WARN: meta.json read failed: {meta_path} ({e})", file=sys.stderr)
+    sys.exit(0)
+
+def check(key, expected):
+    global ok
+    actual = data.get(key)
+    if actual != expected:
+        ok = False
+        print(f"WARN: meta.json mismatch: {meta_path} key={key} actual={actual} expected={expected}", file=sys.stderr)
+
+check("evfile", evfile)
+check("seed", seed)
+check("stage", stage)
+check("tuple", tuple_num)
+check("sym", sym)
+sys.exit(2 if not ok else 0)
+PY
+      status=$?
+      if [ "$status" -eq 2 ] && [ "$FORCE_META" -eq 1 ]; then
+        python3 "$write_meta" --force --board-dir "$BOARD_ROOT" "$data_dir" "$evfile"
+      fi
     fi
   fi
 }
