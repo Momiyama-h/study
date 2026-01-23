@@ -1,4 +1,5 @@
 import argparse
+import contextlib
 import json
 import re
 from pathlib import Path
@@ -21,6 +22,25 @@ from . import (
 )
 from .common import PlayerData, board_dir, BASE_DIR, make_safe_name
 __version__ = "1.5.0"
+
+try:
+    import fcntl  # type: ignore
+except ImportError:  # pragma: no cover - non-POSIX
+    fcntl = None
+
+
+@contextlib.contextmanager
+def config_lock(path: Path):
+    if fcntl is None:
+        yield
+        return
+    lock_path = path.parent / f"{path.name}.lock"
+    with open(lock_path, "w", encoding="utf-8") as lock_fp:
+        fcntl.flock(lock_fp, fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(lock_fp, fcntl.LOCK_UN)
 
 
 def read_config(path: Path) -> dict:
@@ -66,40 +86,41 @@ def label_from_meta(data_dir: Path) -> str | None:
 
 
 def get_config(board_data_dirs: list[Path]):
-    if config_path.exists():
-        config = read_config(config_path)
-        for d in board_data_dirs:
-            rel = d.relative_to(board_dir)
-            key = make_safe_name(rel)
-            meta_label = label_from_meta(d)
-            default_label = meta_label if meta_label else str(rel)
-            if key not in config:
-                config[key] = {
-                    "label": default_label,
+    with config_lock(config_path):
+        if config_path.exists():
+            config = read_config(config_path)
+            for d in board_data_dirs:
+                rel = d.relative_to(board_dir)
+                key = make_safe_name(rel)
+                meta_label = label_from_meta(d)
+                default_label = meta_label if meta_label else str(rel)
+                if key not in config:
+                    config[key] = {
+                        "label": default_label,
+                        "color": None,
+                        "linestyle": "solid",
+                        "order": 0,
+                    }
+                else:
+                    if meta_label:
+                        current_label = config[key].get("label")
+                        if current_label in (str(rel), key, None, ""):
+                            config[key]["label"] = meta_label
+            # orderを追記したのでorder keyが存在しない場合
+            for d in config.values():
+                if "order" not in d:
+                    d["order"] = 0
+        else:
+            config = {
+                make_safe_name(d.relative_to(board_dir)): {
+                    "label": (label_from_meta(d) or str(d.relative_to(board_dir))),
                     "color": None,
                     "linestyle": "solid",
-                    "order": 0,
                 }
-            else:
-                if meta_label:
-                    current_label = config[key].get("label")
-                    if current_label in (str(rel), key, None, ""):
-                        config[key]["label"] = meta_label
-        # orderを追記したのでorder keyが存在しない場合
-        for d in config.values():
-            if "order" not in d:
-                d["order"] = 0
-    else:
-        config = {
-            make_safe_name(d.relative_to(board_dir)): {
-                "label": (label_from_meta(d) or str(d.relative_to(board_dir))),
-                "color": None,
-                "linestyle": "solid",
+                for d in board_data_dirs
             }
-            for d in board_data_dirs
-        }
 
-    write_config(config_path, config)
+        write_config(config_path, config)
     return config
 
 

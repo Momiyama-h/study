@@ -98,13 +98,20 @@
 ## perfect_player/
 
 ### run_eval_pp_for_run_name.sh
-- 目的: run_name 配下の board_data から eval-state / eval-after-state を作成
-- デフォルト出力: per-nt（board_data/<run_name>/seed<seed>/NT*_/eval-*.txt）
-- --output-mode pp を指定すると board_data/PP/ に安全名で出力
-- --parallel N で並列数を指定可能（デフォルト: nproc）
+- 目的: board_data の state/after-state を PP で評価し、eval-state/after-state を作成
+- 必須引数:
+  - --run-name NAME
+- オプション:
+  - --board-root PATH: board_data ルート（省略時は ../board_data）
+  - --output-mode MODE: per-nt（デフォルト）または pp
+  - --force: 既存の eval-state/after-state を上書き
+  - --parallel N: 並列数（デフォルト: nproc）
+- 出力先:
+  - per-nt: board_data/<run_name>/seedX/NT*_*/eval-state.txt, eval-after-state.txt
+  - pp: board_data/PP/eval-state-<safe_name>.txt, eval-after-state-<safe_name>.txt
 - 例:
-  - ./perfect_player/run_eval_pp_for_run_name.sh --run-name 20260123_0300__stage
-
+  - ./perfect_player/run_eval_pp_for_run_name.sh --run-name 20260123_0300__nostage
+  - ./perfect_player/run_eval_pp_for_run_name.sh --run-name 20260123_0300__nostage --board-root /HDD/momiyama2/data/study/board_data --output-mode per-nt --force --parallel 4
 ### cp.sh
 - 目的: PP 関連のコピー補助（旧版）
 
