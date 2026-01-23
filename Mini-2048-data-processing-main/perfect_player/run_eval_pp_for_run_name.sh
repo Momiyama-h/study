@@ -44,6 +44,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 if [[ -z "$BOARD_ROOT" ]]; then
   BOARD_ROOT="$SCRIPT_DIR/../board_data"
 fi
+BOARD_ROOT_REAL="$(readlink -f "$BOARD_ROOT")"
 
 # Compile if missing
 if [ ! -x "$SCRIPT_DIR/eval_state_pp" ]; then
@@ -61,14 +62,15 @@ fi
 
 count=0
 while IFS= read -r -d '' d; do
-  case "$d" in
-    "$BOARD_ROOT"/*) ;;
+  d_real="$(readlink -f "$d")"
+  case "$d_real" in
+    "$BOARD_ROOT_REAL"/*) ;;
     *)
-      echo "WARN: skip (outside board_root): $d" >&2
+      echo "WARN: skip (outside board_root): $d_real" >&2
       continue
       ;;
   esac
-  rel="${d#$BOARD_ROOT/}"
+  rel="${d_real#$BOARD_ROOT_REAL/}"
   safe="${rel//\//__}"
   safe="${safe//\\/__}"
   out_state="$BOARD_ROOT/PP/eval-state-${safe}.txt"
