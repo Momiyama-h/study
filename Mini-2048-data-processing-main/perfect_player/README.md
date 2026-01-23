@@ -2,6 +2,9 @@
 
 - スタック領域を大量に消費するのでメモリ 16G 以上の Linux 環境で動かしてください
 - 出力ファイルは全て board_data ディレクトリの下の各プレイヤーディレクトリの中に出力されます
+- `run_eval_pp_for_run_name.sh` の `--output-mode` で出力先を切り替えられます
+  - デフォルトは `per-nt`（`board_data/<run_name>/seed<seed>/NT*_*` 直下に `eval-state.txt` と `eval-after-state.txt`）
+  - `pp` を指定すると従来通り `board_data/PP/` に安全名で出力します
 
 ## N タプルプレイヤーのプレイした情報が欲しい,N タプルプレイヤーを使ったグラフを書きたい場合
 

@@ -291,6 +291,39 @@ config_path = BASE_DIR / "config.json"
 config = get_config(board_data_dirs)
 player_data_list = get_files(config, board_data_dirs)
 
+def infer_scatter_output_name(player_data_list: list[PlayerData]) -> str | None:
+    """Infer output name from board_data layout when a single target is used."""
+    if not player_data_list:
+        return None
+    run_names = set()
+    seeds = set()
+    tuples = set()
+    syms = set()
+    for p in player_data_list:
+        parts = p.rel_path.parts
+        if len(parts) < 3:
+            return None
+        run_name, seed_dir, nt_dir = parts[0], parts[1], parts[2]
+        if not seed_dir.startswith("seed"):
+            return None
+        seed = seed_dir.replace("seed", "")
+        if not nt_dir.startswith("NT") or "_" not in nt_dir:
+            return None
+        tuple_num = nt_dir[2]
+        sym = nt_dir.split("_", 1)[1]
+        run_names.add(run_name)
+        seeds.add(seed)
+        tuples.add(f"{tuple_num}tuple")
+        syms.add(sym)
+    if len(run_names) == 1 and len(seeds) == 1 and len(tuples) == 1 and len(syms) == 1:
+        run_name = next(iter(run_names))
+        seed = next(iter(seeds))
+        tuple_name = next(iter(tuples))
+        sym = next(iter(syms))
+        return f"{run_name}_{seed}_{tuple_name}_{sym}_scatter.pdf"
+    return None
+
+
 if args.graph == "acc":
     output_name = args.output if args.output else "accuracy.pdf"
 
@@ -337,7 +370,11 @@ elif args.graph == "histgram":
         is_show=args.is_show,
     )
 elif args.graph == "scatter":
-    output_name = args.output if args.output else "scatter.pdf"
+    if args.output:
+        output_name = args.output
+    else:
+        inferred = infer_scatter_output_name(player_data_list)
+        output_name = inferred if inferred else "scatter.pdf"
 
     result = scatter.plot_scatter(
         player_data_list=player_data_list,
@@ -345,7 +382,11 @@ elif args.graph == "scatter":
         is_show=args.is_show,
     )
 elif args.graph == "scatter_v2":
-    output_name = args.output if args.output else "scatter.pdf"
+    if args.output:
+        output_name = args.output
+    else:
+        inferred = infer_scatter_output_name(player_data_list)
+        output_name = inferred if inferred else "scatter.pdf"
 
     result = scatter_v2.plot_scatter(
         player_data_list=player_data_list,

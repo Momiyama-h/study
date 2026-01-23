@@ -41,6 +41,9 @@ class PlayerData:
 
     @property
     def pp_eval_state(self):
+        local = self.target_dir / "eval-state.txt"
+        if local.exists():
+            return local
         pp: Path = self.pp_dir / f"eval-state-{self.name}.txt"
         if not pp.exists():
             raise FileNotFoundError(f"{pp}が存在しません。")
@@ -48,6 +51,9 @@ class PlayerData:
 
     @property
     def pp_eval_after_state(self):
+        local = self.target_dir / "eval-after-state.txt"
+        if local.exists():
+            return local
         pp: Path = self.pp_dir / f"eval-after-state-{self.name}.txt"
         if not pp.exists():
             raise FileNotFoundError(f"{pp}が存在しません。")
