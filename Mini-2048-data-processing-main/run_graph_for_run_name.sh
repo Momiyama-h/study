@@ -8,7 +8,7 @@ Usage:
 
 Options:
   --run-name NAME      run_name under board_data (required)
-  --graph GRAPH        analysis type (required: acc|err-rel|err-abs|surv|surv-diff|evals|scatter|scatter_v2)
+  --graph GRAPH        analysis type (required: acc|acc-mean|err-rel|err-rel-mean|err-abs|err-abs-mean|surv|surv-mean|surv-diff|surv-diff-mean|evals|evals-mean|scatter|scatter_v2)
   --output-name NAME   output filename without extension (default: <graph>)
   --ext EXT            output extension (default: png)
   --seed-start N       start seed (optional)

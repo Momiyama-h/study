@@ -196,14 +196,20 @@ arg_parser.add_argument(
     "graph",
     choices=[
         "acc",
+        "acc-mean",
         "acc-diff",
+        "err-rel-mean",
         "err-rel",
+        "err-abs-mean",
         "err-abs",
+        "surv-mean",
         "surv",
+        "surv-diff-mean",
         "surv-diff",
         "scatter",
         "scatter_v2",
         "histgram",
+        "evals-mean",
         "evals",
         "boxplot-eval",
         "pea",
@@ -366,6 +372,12 @@ if args.graph == "acc":
     result = accuracy.calc_accuracy_data(
         player_data_list=player_data_list,
     )
+elif args.graph == "acc-mean":
+    output_name = args.output if args.output else "accuracy_mean.pdf"
+
+    result = accuracy.calc_accuracy_mean_data(
+        player_data_list=player_data_list,
+    )
 elif args.graph == "acc-diff":
     output_name = args.output if args.output else "acc-diff.pdf"
 
@@ -379,10 +391,22 @@ elif args.graph == "err-rel":
     result = error_rel.calc_rel_error_data(
         player_data_list=player_data_list,
     )
+elif args.graph == "err-rel-mean":
+    output_name = args.output if args.output else "error_rel_mean.pdf"
+
+    result = error_rel.calc_rel_error_mean_data(
+        player_data_list=player_data_list,
+    )
 elif args.graph == "err-abs":
     output_name = args.output if args.output else "error_abs.pdf"
 
     result = error_abs.calc_abs_error_data(
+        player_data_list=player_data_list,
+    )
+elif args.graph == "err-abs-mean":
+    output_name = args.output if args.output else "error_abs_mean.pdf"
+
+    result = error_abs.calc_abs_error_mean_data(
         player_data_list=player_data_list,
     )
 elif args.graph == "surv":
@@ -391,10 +415,22 @@ elif args.graph == "surv":
     result = survival.calc_survival_rate_data(
         player_data_list=player_data_list,
     )
+elif args.graph == "surv-mean":
+    output_name = args.output if args.output else "survival_mean.pdf"
+
+    result = survival.calc_survival_mean_data(
+        player_data_list=player_data_list,
+    )
 elif args.graph == "surv-diff":
     output_name = args.output if args.output else "survival-diff.pdf"
 
     result = survival_diff.calc_survival_diff_rate_data(
+        player_data_list=player_data_list,
+    )
+elif args.graph == "surv-diff-mean":
+    output_name = args.output if args.output else "survival-diff-mean.pdf"
+
+    result = survival_diff.calc_survival_diff_mean_data(
         player_data_list=player_data_list,
     )
 elif args.graph == "histgram":
@@ -437,6 +473,12 @@ elif args.graph == "evals":
         output=output_dir / output_name,
         is_show=args.is_show,
     )
+elif args.graph == "evals-mean":
+    output_name = args.output if args.output else "evals_mean.pdf"
+
+    result = evals.calc_eval_mean_data(
+        player_data_list=player_data_list,
+    )
 elif args.graph == "boxplot-eval":
     output_name = args.output if args.output else "boxplot_eval.pdf"
 
@@ -466,6 +508,9 @@ if result:
         k_config = config.get(k, {})
         if "order" in k_config:
             del k_config["order"]
+        if args.graph == "acc-mean" and "label" not in k_config:
+            k_config = dict(k_config)
+            k_config["label"] = k
         plt.plot(v.x, v.y, **k_config)
     handles, labels = plt.gca().get_legend_handles_labels()
     sorted_pairs = sorted(zip(labels, handles), key=lambda x: x[0])

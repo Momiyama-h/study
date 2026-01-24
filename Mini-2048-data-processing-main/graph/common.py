@@ -69,6 +69,23 @@ class PlayerData:
         return self._meta_cache
 
 
+def tuple_sym_stage(player_data: PlayerData):
+    meta = player_data.meta or {}
+    tuple_v = meta.get("tuple")
+    sym = meta.get("sym")
+    stage = meta.get("stage")
+    if tuple_v is not None and sym is not None:
+        return tuple_v, sym, stage
+    parts = player_data.rel_path.parts
+    if len(parts) >= 3:
+        nt_dir = parts[2]
+        if nt_dir.startswith("NT") and "_" in nt_dir:
+            tuple_v = int(nt_dir[2])
+            sym = nt_dir.split("_", 1)[1]
+            return tuple_v, sym, stage
+    return None
+
+
 @dataclass
 class EvalAndHandProgress:
     evals: list[float]  # 長さ4のリスト
