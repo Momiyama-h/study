@@ -55,6 +55,9 @@ if [[ -z "$RUN_NAME" || -z "$GRAPH" ]]; then
   echo "ERROR: --run-name and --graph are required." >&2
   exit 1
 fi
+if [[ "$GRAPH" == *"-mean" ]]; then
+  COMBINE_SEEDS=1
+fi
 
 if [[ -z "$OUTPUT_NAME" ]]; then
   OUTPUT_NAME="$GRAPH"
