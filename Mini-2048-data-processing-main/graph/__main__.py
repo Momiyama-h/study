@@ -508,7 +508,14 @@ if result:
         k_config = config.get(k, {})
         if "order" in k_config:
             del k_config["order"]
-        if args.graph == "acc-mean" and "label" not in k_config:
+        if args.graph in (
+            "acc-mean",
+            "err-abs-mean",
+            "err-rel-mean",
+            "surv-mean",
+            "surv-diff-mean",
+            "evals-mean",
+        ) and "label" not in k_config:
             k_config = dict(k_config)
             k_config["label"] = k
         plt.plot(v.x, v.y, **k_config)

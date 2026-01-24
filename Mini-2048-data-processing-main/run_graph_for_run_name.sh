@@ -118,9 +118,9 @@ spawn_job() {
 
 if [ -n "$SEED_START" ] && [ -n "$SEED_END" ]; then
   if [ "$COMBINE_SEEDS" -eq 1 ]; then
-    seed_args=()
+    seed_args=(--seed)
     for ((s=SEED_START; s<=SEED_END; s++)); do
-      seed_args+=(--seed "$s")
+      seed_args+=("$s")
     done
     for tuple in "${TUPLE_ARR[@]}"; do
       for sym in "${SYM_ARR[@]}"; do
