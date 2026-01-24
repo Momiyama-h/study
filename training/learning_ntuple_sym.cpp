@@ -205,6 +205,11 @@ int main(int argc, char* argv[])
   run_name = argv[2];
   srand(global_seed);
 
+  double init_ev = 0.0;
+  if (const char* ev = getenv("INIT_EV"); ev && *ev) {
+    init_ev = atof(ev);
+  }
+
   const char* base = getenv("NTUPLE_DAT_ROOT");
   if (!base || !*base) {
     base = "/HDD/momiyama2/data/study/ntuple_dat";
@@ -218,7 +223,7 @@ int main(int argc, char* argv[])
       fs::path(base) / run_name / ("seed" + to_string(global_seed)) / tuple_dir;
   fs::create_directories(output_dir);
 
-  initEvs(0);
+  initEvs(init_ev);
   openCsvLog();
   openBoardLog();
 

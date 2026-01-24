@@ -94,6 +94,14 @@
 - 例:
   - ./run_err_abs_for_run_name.sh --run-name 20260123_0300__nostage --seed-start 5 --seed-end 14 --stage 9 --output-name err_abs_stage9
 
+### 学習コードの楽観的初期化（INIT_EV）
+- 対象: `training/learning_ntuple_sym.cpp`, `training/learning_ntuple_notsym.cpp`
+- 環境変数 `INIT_EV` を指定すると、タプル初期値がその値で初期化される
+- 未指定の場合は従来通り 0
+- 例:
+  - `INIT_EV=1000 ./learning_ntuple_sym 5 20260123_0300__nostage`
+  - `INIT_EV=1000 ./learning_ntuple_notsym 5 20260123_0300__nostage`
+
 
 ### run_graph_for_run_name.sh
 - 目的: run_name 配下の board_data から任意グラフを生成（共通スクリプト）

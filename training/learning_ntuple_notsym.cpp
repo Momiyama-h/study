@@ -276,10 +276,15 @@ int main(int argc, char* argv[])
   run_name = argv[2];
   srand(global_seed);
 
+  double init_ev = 0.0;
+  if (const char* ev = getenv("INIT_EV"); ev && *ev) {
+    init_ev = atof(ev);
+  }
+
 #if defined(USE_4TUPLE) || defined(NT4A)
-  initEvs(0);
+  initEvs(init_ev);
 #else
-  NT6_notsym::initEvs(0);
+  NT6_notsym::initEvs(init_ev);
 #endif
 
   const char* base = getenv("NTUPLE_DAT_ROOT");
