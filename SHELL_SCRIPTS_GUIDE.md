@@ -61,6 +61,54 @@
 ### run_plot_and_summary.sh
 - 目的: LOG_ROOT 配下のログをまとめて可視化・要約
 
+
+### run_err_abs_for_run_name.sh
+- 目的: run_name 配下の board_data から err-abs を生成
+- 必須引数:
+  - --run-name NAME
+- オプション:
+  - --output-name NAME: 出力ファイルのベース名（デフォルト: err_abs）
+  - --ext EXT: 拡張子（デフォルト: png）
+  - --seed-start N / --seed-end N: seed 範囲指定
+  - --combine-seeds: 複数seedを1枚にまとめる
+  - --stage N: meta.json の stage で絞り込み
+  - --tuples LIST: 4,6 など
+  - --sym-list LIST: sym,notsym など
+  - --parallel N: 並列数（デフォルト: nproc）
+- 出力先:
+  - /HDD/momiyama2/data/study/analysis_outputs/<run_name>/NT{4|6}/err-abs/{sym|notsym}/
+- 例:
+  - ./run_err_abs_for_run_name.sh --run-name 20260123_0300__nostage --seed-start 5 --seed-end 14 --stage 9 --output-name err_abs_stage9
+
+
+### run_graph_for_run_name.sh
+- 目的: run_name 配下の board_data から任意グラフを生成（共通スクリプト）
+- 必須引数:
+  - --run-name NAME
+  - --graph GRAPH（acc|err-rel|err-abs|surv|surv-diff|evals|scatter|scatter_v2）
+- オプション:
+  - --output-name NAME: 出力ファイルのベース名（デフォルト: graph名）
+  - --ext EXT: 拡張子（デフォルト: png）
+  - --seed-start N / --seed-end N: seed 範囲指定
+  - --combine-seeds: 複数seedを1枚にまとめる
+  - --stage N: meta.json の stage で絞り込み
+  - --tuples LIST: 4,6 など
+  - --sym-list LIST: sym,notsym など
+  - --parallel N: 並列数（デフォルト: nproc）
+- 出力先:
+  - /HDD/momiyama2/data/study/analysis_outputs/<run_name>/NT{4|6}/{graph}/{sym|notsym}/
+- 例:
+  - ./run_graph_for_run_name.sh --run-name 20260123_0300__nostage --graph acc --seed-start 5 --seed-end 14 --stage 9 --output-name acc_stage9
+
+### run_acc_for_run_name.sh / run_err_rel_for_run_name.sh / run_surv_for_run_name.sh / run_surv_diff_for_run_name.sh / run_evals_for_run_name.sh
+- 目的: run_graph_for_run_name.sh の薄いラッパー（graph 固定）
+- 例:
+  - ./run_acc_for_run_name.sh --run-name 20260123_0300__nostage --seed-start 5 --seed-end 14 --stage 9 --output-name acc_stage9
+  - ./run_err_rel_for_run_name.sh --run-name 20260123_0300__nostage --seed-start 5 --seed-end 14 --stage 9 --output-name err_rel_stage9
+  - ./run_surv_for_run_name.sh --run-name 20260123_0300__nostage --seed-start 5 --seed-end 14 --stage 9 --output-name surv_stage9
+  - ./run_surv_diff_for_run_name.sh --run-name 20260123_0300__nostage --seed-start 5 --seed-end 14 --stage 9 --output-name surv_diff_stage9
+  - ./run_evals_for_run_name.sh --run-name 20260123_0300__nostage --seed-start 5 --seed-end 14 --stage 9 --output-name evals_stage9
+
 ## Mini-2048-data-processing-main/
 
 ### run_scatter_for_run_name.sh
