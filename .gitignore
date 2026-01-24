@@ -45,6 +45,13 @@ board_data/**/after-state*.txt
 board_data/**/eval-state*.txt
 board_data/**/eval-after-state*.txt
 
+# local build artifacts (do not share)
+Mini-2048-data-processing-main/NT/play_nt
+Mini-2048-data-processing-main/NT/play_nt_ns
+Mini-2048-data-processing-main/perfect_player/eval_state_pp
+Mini-2048-data-processing-main/perfect_player/eval_after_state_pp
+Mini-2048-data-processing-main/graph/config.json.lock
+
 # large archives / exports
 *.tgz
 *.tar.gz

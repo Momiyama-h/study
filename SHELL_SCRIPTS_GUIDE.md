@@ -109,6 +109,16 @@
   - ./run_surv_diff_for_run_name.sh --run-name 20260123_0300__nostage --seed-start 5 --seed-end 14 --stage 9 --output-name surv_diff_stage9
   - ./run_evals_for_run_name.sh --run-name 20260123_0300__nostage --seed-start 5 --seed-end 14 --stage 9 --output-name evals_stage9
 
+
+### clean_build_artifacts.sh
+- 目的: board_data 関係の実行で生成されたバイナリ・ロックファイルを削除
+- 削除対象:
+  - Mini-2048-data-processing-main/NT/play_nt, play_nt_ns
+  - Mini-2048-data-processing-main/perfect_player/eval_state_pp, eval_after_state_pp
+  - Mini-2048-data-processing-main/graph/config.json.lock
+- 例:
+  - ./scripts/clean_build_artifacts.sh
+
 ## Mini-2048-data-processing-main/
 
 ### run_scatter_for_run_name.sh
