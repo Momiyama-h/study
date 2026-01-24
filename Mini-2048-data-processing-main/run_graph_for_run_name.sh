@@ -79,13 +79,17 @@ JOBS=0
 run_graph() {
   local tuple="$1"
   local sym="$2"
-  shift 2
+  local seed_tag="$3"
+  shift 3
   local seed_args=("$@")
 
   local out_dir="$OUT_BASE/$RUN_NAME/NT${tuple}/${GRAPH}/${sym}"
   mkdir -p "$out_dir"
 
   local output_file="${OUTPUT_NAME}.${EXT}"
+  if [ -n "$seed_tag" ]; then
+    output_file="${OUTPUT_NAME}_${seed_tag}.${EXT}"
+  fi
   local cmd=(uv run -m graph "$GRAPH" --recursive --intersection "$RUN_NAME" \
     --output "$output_file" --output-dir "$out_dir")
   cmd+=(--tuple "$tuple" --sym "$sym")
@@ -117,7 +121,7 @@ if [ -n "$SEED_START" ] && [ -n "$SEED_END" ]; then
     done
     for tuple in "${TUPLE_ARR[@]}"; do
       for sym in "${SYM_ARR[@]}"; do
-        spawn_job "$tuple" "$sym" "${seed_args[@]}"
+        spawn_job "$tuple" "$sym" "seed${SEED_START}-${SEED_END}" "${seed_args[@]}"
       done
     done
   else
@@ -125,7 +129,7 @@ if [ -n "$SEED_START" ] && [ -n "$SEED_END" ]; then
       seed_args=(--seed "$s")
       for tuple in "${TUPLE_ARR[@]}"; do
         for sym in "${SYM_ARR[@]}"; do
-          spawn_job "$tuple" "$sym" "${seed_args[@]}"
+          spawn_job "$tuple" "$sym" "seed${s}" "${seed_args[@]}"
         done
       done
     done
@@ -133,7 +137,7 @@ if [ -n "$SEED_START" ] && [ -n "$SEED_END" ]; then
 else
   for tuple in "${TUPLE_ARR[@]}"; do
     for sym in "${SYM_ARR[@]}"; do
-      spawn_job "$tuple" "$sym"
+      spawn_job "$tuple" "$sym" ""
     done
   done
 fi
