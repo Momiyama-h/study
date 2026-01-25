@@ -20,60 +20,53 @@ using namespace std;
 const int pos[NUM_TUPLE][TUPLE_SIZE] =
     {
         {0, 1, 3, 4},
+        {0, 3, 1, 4},
+        {2, 1, 5, 4},
+        {2, 5, 1, 4},
+        {6, 7, 3, 4},
+        {6, 3, 7, 4},
+        {8, 7, 5, 4},
+        {8, 5, 7, 4},
         {0, 3, 6, 7},
-        {1, 4, 7, 8},
-        {0, 3, 4, 6},
-        {1, 4, 5, 7},
-        {0, 1, 4, 5},
-        
-        {1, 2, 4, 5},
-        {0, 1, 2, 3},
-        {3, 4, 5, 6},
-        {0, 1, 2, 4},
-        {3, 4, 5, 7},
-        {2, 4, 5, 7},
-        
-        {4, 5, 7, 8},
-        {1, 2, 5, 8},
-        {0, 1, 4, 7},
-        {2, 4, 5, 8},
-        {1, 3, 4, 7},
-        {3, 4, 7, 8},
-        
-        {3, 4, 6, 7},
-        {5, 6, 7, 8},
-        {2, 3, 4, 5},
-        {4, 6, 7, 8},
-        {1, 3, 4, 5},
-        {1, 3, 4, 6},
-        
-        {3, 4, 6, 7},
-        {0, 1, 3, 6},
-        {1, 2, 4, 7},
-        {0, 3, 4, 6},
-        {1, 4, 5, 7},
-        {4, 5, 6, 7},
-        
-        {0, 1, 3, 4},
         {0, 1, 2, 5},
+        {2, 5, 8, 7},
+        {2, 1, 0, 3},
+        {6, 3, 0, 1},
+        {6, 7, 8, 5},
+        {8, 5, 2, 1},
+        {8, 7, 6, 3},
+        {1, 4, 7, 8},
         {3, 4, 5, 8},
-        {0, 1, 2, 4},
-        {3, 4, 5, 7},
+        {1, 4, 7, 6},
+        {5, 4, 3, 6},
+        {7, 4, 1, 2},
+        {3, 4, 5, 2},
+        {7, 4, 1, 0},
+        {5, 4, 3, 0},
+        {0, 3, 4, 6},
+        {0, 1, 4, 2},
+        {2, 5, 4, 8},
+        {2, 1, 4, 0},
+        {6, 3, 4, 0},
+        {6, 7, 4, 8},
+        {8, 5, 4, 2},
+        {8, 7, 4, 6},
+        {1, 4, 5, 7},
+        {3, 4, 7, 5},
+        {1, 4, 3, 7},
+        {5, 4, 7, 3},
+        {7, 4, 5, 1},
+        {3, 4, 1, 5},
+        {7, 4, 3, 1},
+        {5, 4, 1, 3},
+        {0, 1, 4, 5},
         {0, 3, 4, 7},
-        
-        {1, 2, 4, 5},
-        {2, 5, 7, 8},
-        {1, 4, 6, 7},
-        {2, 4, 5, 8},
-        {1, 3, 4, 7},
-        {1, 2, 3, 4},
-
-        {4, 5, 7, 8},
-        {6, 7, 8, 3},
-        {0, 3, 4, 5},
-        {4, 6, 7, 8},
-        {1, 3, 4, 5},
-        {1, 4, 5, 8},
+        {2, 1, 4, 3},
+        {2, 5, 4, 7},
+        {6, 7, 4, 5},
+        {6, 3, 4, 1},
+        {8, 7, 4, 3},
+        {8, 5, 4, 1},
 };
 #else // NT4A
 #define NUM_TUPLE 24
@@ -135,6 +128,7 @@ inline int calcStage(const int* board)
 #ifdef SINGLE_STAGE
   return 0;
 #else
+#pragma GCC unroll 9 
   for (int i = 0; i < 9; i++) {
     if (board[i] >= 9) return 1;
   }
@@ -221,6 +215,7 @@ inline double calcEv(const int *board)
   int s = calcStage(board);
 
   double ev = 0;
+  #pragma GCC unroll 24
   for (int i = 0; i < NUM_TUPLE; i++)
   {
     // for (int j = 0; j < 8; j++) {
@@ -243,6 +238,7 @@ inline double calcErr(const int *board)
   int s = calcStage(board);
 
   double err = 0;
+  #pragma GCC unroll 24
   for (int i = 0; i < NUM_TUPLE; i++)
   {
     // for (int j = 0; j < 8; j++) {
@@ -263,6 +259,7 @@ inline double calcAErr(const int *board)
   int s = calcStage(board);
 
   double aerr = 0;
+  #pragma GCC unroll 24
   for (int i = 0; i < NUM_TUPLE; i++)
   {
     // for (int j = 0; j < 8; j++) {
@@ -283,6 +280,7 @@ inline double calcMinAErr(const int *board)
   int s = calcStage(board);
 
   double minAerr = DBL_MAX;
+  #pragma GCC unroll 24
   for (int i = 0; i < NUM_TUPLE; i++)
   {
     //for (int j = 0; j < 8; j++){
@@ -306,6 +304,7 @@ inline int calcMinCount(const int *board)
   int s = calcStage(board);
 
   int minCount = INT_MAX;
+  #pragma GCC unroll 24
   for (int i = 0; i < NUM_TUPLE; i++)
   {
     //for (int j = 0; j < 8; j++){
@@ -329,6 +328,7 @@ inline void update(const int *board, double diff)
   diff = diff / NUM_TUPLE;
   int s = calcStage(board);
 
+  #pragma GCC unroll 24
   for (int i = 0; i < NUM_TUPLE; i++)
   {
     // for (int j = 0; j < 8; j++) {

@@ -24,13 +24,13 @@ namespace fs = std::filesystem;
 #endif
 
 #ifndef STORAGE_FREQUENCY
-#define STORAGE_FREQUENCY (5*100000000)
+#define STORAGE_FREQUENCY (5*100000000LL)
 #endif
 #ifndef STORAGE_COUNT
 #define STORAGE_COUNT 10
 #endif
 #ifndef MAX_GAMES
-#define MAX_GAMES 1000000000 //100000//
+#define MAX_GAMES 1000000000LL //100000/
 #endif
 #ifndef ENABLE_CSV_LOG
 #define ENABLE_CSV_LOG 0
