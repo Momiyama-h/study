@@ -8,7 +8,8 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 RUN_NAME_BASE="20260124_1700_OI1200"
 RUN_NAME="${RUN_NAME_BASE}__stage"
-SEEDS=(${SEEDS:-"5 6 7 8 9 10 11 12 13 14"})
+SEED_START="${SEED_START:-5}"
+SEED_END="${SEED_END:-14}"
 
 NTUPLE_DAT_ROOT="${NTUPLE_DAT_ROOT:-/HDD/momiyama2/data/study/ntuple_dat}"
 LOG_ROOT="${LOG_ROOT:-/HDD/momiyama2/data/study/training_logs}"
@@ -28,8 +29,8 @@ echo "== Rebuild board_data binaries =="
 echo "== Rebuild board_data (NT4_notsym only) =="
 "${SCRIPT_DIR}/run_make_board_data_from_dat.sh" \
   --run-name "${RUN_NAME}" \
-  --seed-start "${SEEDS[0]}" \
-  --seed-end "${SEEDS[-1]}" \
+  --seed-start "${SEED_START}" \
+  --seed-end "${SEED_END}" \
   --ev-stages 9 \
   --tuples 4 \
   --sym-list notsym \
@@ -39,8 +40,8 @@ echo "== Rebuild PP binaries =="
 (
   cd "${PERF_DIR}"
   rm -f eval_state_pp eval_after_state_pp
-  g++ eval_state.cpp -O3 -std=c++20 -o eval_state_pp
-  g++ eval_after_state.cpp -O3 -std=c++20 -o eval_after_state_pp
+  g++ eval_state.cpp -O3 -std=c++20 -mcmodel=large -o eval_state_pp
+  g++ eval_after_state.cpp -O3 -std=c++20 -mcmodel=large -o eval_after_state_pp
 )
 
 echo "== PP eval (per-nt) =="
