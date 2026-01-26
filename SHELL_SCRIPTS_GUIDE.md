@@ -107,7 +107,7 @@
 - 目的: run_name 配下の board_data から任意グラフを生成（共通スクリプト）
 - 必須引数:
   - --run-name NAME
-  - --graph GRAPH（acc|err-rel|err-abs|surv|surv-diff|evals|scatter|scatter_v2|acc-mean|acc-mean-symdiff|err-abs-mean|err-rel-mean）
+  - --graph GRAPH（acc|err-rel|err-abs|surv|surv-diff|evals|scatter|scatter_v2|acc-mean|acc-mean-symdiff|err-abs-mean|err-abs-mean-symdiff|err-rel-mean|err-rel-mean-symdiff|surv-mean|surv-mean-symdiff|surv-symdiff|evals-mean|evals-mean-symdiff）
 - オプション:
   - --output-name NAME: 出力ファイルのベース名（デフォルト: graph名）
   - --ext EXT: 拡張子（デフォルト: png）

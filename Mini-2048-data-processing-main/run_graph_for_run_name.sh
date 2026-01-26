@@ -8,7 +8,7 @@ Usage:
 
 Options:
   --run-name NAME      run_name under board_data (required)
-  --graph GRAPH        analysis type (required: acc|acc-mean|acc-mean-symdiff|err-rel|err-rel-mean|err-abs|err-abs-mean|surv|surv-mean|surv-diff|surv-diff-mean|evals|evals-mean|scatter|scatter_v2|scatter-symdiff)
+  --graph GRAPH        analysis type (required: acc|acc-mean|acc-mean-symdiff|err-rel|err-rel-mean|err-rel-mean-symdiff|err-abs|err-abs-mean|err-abs-mean-symdiff|surv|surv-mean|surv-mean-symdiff|surv-symdiff|surv-diff|surv-diff-mean|evals|evals-mean|evals-mean-symdiff|scatter|scatter_v2|scatter-symdiff)
   --output-name NAME   output filename without extension (default: <graph>)
   --ext EXT            output extension (default: png)
   --seed-start N       start seed (optional)
@@ -59,7 +59,7 @@ fi
 if [[ "$GRAPH" == *"-mean" ]] || [[ "$GRAPH" == "acc-mean-symdiff" ]]; then
   COMBINE_SEEDS=1
 fi
-if [[ "$GRAPH" == "acc-mean-symdiff" || "$GRAPH" == "scatter-symdiff" ]]; then
+if [[ "$GRAPH" == "acc-mean-symdiff" || "$GRAPH" == "err-abs-mean-symdiff" || "$GRAPH" == "err-rel-mean-symdiff" || "$GRAPH" == "surv-mean-symdiff" || "$GRAPH" == "surv-symdiff" || "$GRAPH" == "evals-mean-symdiff" || "$GRAPH" == "scatter-symdiff" ]]; then
   SPLIT_SYM=0
 fi
 
