@@ -21,7 +21,7 @@ def calc_abs_error_data(
     """
     result = PlotData(
         x_label="progress",
-        y_label="rel error",
+        y_label="abs error",
         data={pd.name: "" for pd in player_data_list},
     )
     for player_data in player_data_list:

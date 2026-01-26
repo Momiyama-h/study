@@ -17,15 +17,13 @@ BOARD_ROOT="${BOARD_ROOT:-/HDD/momiyama2/data/study/board_data}"
 GRAPH_ROOT="${REPO_ROOT}/Mini-2048-data-processing-main"
 PERF_DIR="${GRAPH_ROOT}/perfect_player"
 
-echo "== Cleanup NT4_notsym dat/log =="
-rm -rf "${NTUPLE_DAT_ROOT}/${RUN_NAME}"/seed*/NT4_notsym
-rm -rf "${LOG_ROOT}/${RUN_NAME}"/seed*/NT4_notsym
-
-echo "== Train NT4_notsym (stage only) =="
-RUN_NAME_BASE="${RUN_NAME_BASE}" \
-STAGE_MODES=stage \
-SEEDS="${SEEDS[*]}" \
-"${SCRIPT_DIR}/run_train_nt4b_notsym_only.sh"
+echo "== Rebuild board_data binaries =="
+(
+  cd "${GRAPH_ROOT}/NT"
+  rm -f play_nt play_nt_ns
+  g++ Play_NT_player.cpp -O3 -std=c++20 -o play_nt
+  g++ Play_NT_player.cpp -O3 -std=c++20 -DSINGLE_STAGE -o play_nt_ns
+)
 
 echo "== Rebuild board_data (NT4_notsym only) =="
 "${SCRIPT_DIR}/run_make_board_data_from_dat.sh" \
@@ -37,15 +35,23 @@ echo "== Rebuild board_data (NT4_notsym only) =="
   --sym-list notsym \
   --overwrite
 
+echo "== Rebuild PP binaries =="
+(
+  cd "${PERF_DIR}"
+  rm -f eval_state_pp eval_after_state_pp
+  g++ eval_state.cpp -O3 -std=c++20 -o eval_state_pp
+  g++ eval_after_state.cpp -O3 -std=c++20 -o eval_after_state_pp
+)
+
 echo "== PP eval (per-nt) =="
 (
   cd "${PERF_DIR}"
   ./run_eval_pp_for_run_name.sh \
     --run-name "${RUN_NAME}" \
     --board-root "${BOARD_ROOT}" \
-    --output-mode per-nt \
-    --force \
-    --parallel 4
+  --output-mode per-nt \
+  --force \
+  --parallel 4
 )
 
 echo "== Rebuild graphs (NT4 sym/notsym) =="
@@ -67,6 +73,9 @@ echo "== Rebuild graphs (NT4 sym/notsym) =="
 
   ./run_graph_for_run_name.sh --run-name "${RUN_NAME}" --graph evals --seed-start 5 --seed-end 14 --stage 9 --tuples 4 --sym-list sym,notsym --output-name evals_stage9
   ./run_graph_for_run_name.sh --run-name "${RUN_NAME}" --graph evals-mean --seed-start 5 --seed-end 14 --stage 9 --tuples 4 --sym-list sym,notsym --output-name evals_mean_stage9
+  ./run_graph_for_run_name.sh --run-name "${RUN_NAME}" --graph scatter --seed-start 5 --seed-end 14 --stage 9 --tuples 4 --sym-list sym,notsym --output-name scatter_stage9
+  ./run_graph_for_run_name.sh --run-name "${RUN_NAME}" --graph scatter_v2 --seed-start 5 --seed-end 14 --stage 9 --tuples 4 --sym-list sym,notsym --output-name scatter_v2_stage9
+  ./run_graph_for_run_name.sh --run-name "${RUN_NAME}" --graph scatter-symdiff --seed-start 5 --seed-end 14 --stage 9 --tuples 4 --sym-list sym,notsym --output-name scatter_symdiff_stage9
   ./run_graph_for_run_name.sh --run-name "${RUN_NAME}" --graph histgram --seed-start 5 --seed-end 14 --stage 9 --tuples 4 --sym-list sym,notsym --output-name hist_stage9
 )
 

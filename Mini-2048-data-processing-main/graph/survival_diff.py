@@ -62,7 +62,8 @@ def calc_survival_diff_rate_data(
 def _calc_pp_survival_rate():
     pp_state_file = Path("board_data/PP/state.txt")
     text = pp_state_file.read_text()
-    progress_text = re.findall(r"progress: (\\d+)", text)
+    # progress_text = re.findall(r"progress: (\\d+)", text)
+    progress_text = re.findall(r"progress: (\d+)", text)
     progresses = [int(progress) for progress in progress_text]
 
     droped_counter = Counter(progresses)
@@ -77,7 +78,8 @@ def _calc_pp_survival_rate():
 def _calc_survival_diff_curve(pd: PlayerData, pp_survival_rate: list[float]) -> GraphData:
     state_file = pd.state_file
     text = state_file.read_text()
-    progress_text = re.findall(r"progress: (\\d+)", text)
+    # progress_text = re.findall(r"progress: (\\d+)", text)
+    progress_text = re.findall(r"progress: (\d+)", text)
     progresses = [int(progress) for progress in progress_text]
 
     droped_counter = Counter(progresses)

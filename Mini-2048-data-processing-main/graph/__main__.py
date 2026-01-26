@@ -17,6 +17,7 @@ from . import (
     survival_diff,
     acc_diff,
     scatter_v2,
+    scatter_symdiff,
     evals,
     progress_eval_accuracy,
 )
@@ -209,6 +210,7 @@ arg_parser.add_argument(
         "surv-diff",
         "scatter",
         "scatter_v2",
+        "scatter-symdiff",
         "histgram",
         "evals-mean",
         "evals",
@@ -468,6 +470,14 @@ elif args.graph == "scatter_v2":
         output_name = inferred if inferred else "scatter.pdf"
 
     result = scatter_v2.plot_scatter(
+        player_data_list=player_data_list,
+        output=output_dir / output_name,
+        is_show=args.is_show,
+    )
+elif args.graph == "scatter-symdiff":
+    output_name = args.output if args.output else "scatter_symdiff.pdf"
+
+    result = scatter_symdiff.plot_scatter_symdiff(
         player_data_list=player_data_list,
         output=output_dir / output_name,
         is_show=args.is_show,

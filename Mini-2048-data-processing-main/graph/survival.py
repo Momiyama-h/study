@@ -40,7 +40,8 @@ def calc_survival_rate_data(
 
 def _calc_survival_curve(pd: PlayerData) -> GraphData:
     text = pd.state_file.read_text()
-    progress_text = re.findall(r"progress: (\\d+)", text)
+    # progress_text = re.findall(r"progress: (\\d+)", text)
+    progress_text = re.findall(r"progress: (\d+)", text)
     progresses = [int(progress) for progress in progress_text]
 
     droped_counter = Counter(progresses)
