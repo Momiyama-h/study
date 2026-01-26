@@ -72,6 +72,39 @@
 - 例:
   - ./training/run_plot_scores_for_run_name.sh --run-name 20260123_0300__nostage --seed-start 5 --seed-end 14 --avescope 10000
 
+### run_export_score_averages_for_run_name.sh
+- 目的: run_name 単位で seed別・NT別の平均スコアをCSVに出力（sym/notsym 別）
+- 入力: training_logs/<run_name>/seed<seed>/NT*_* の log_*.txt
+- 出力: analysis_outputs/training_scores_csv/<run_name>/NT{4|6}/{sym|notsym}/score_seed{seed}_NT{tuple}_{sym}.csv
+- 主な引数:
+  - --run-name NAME（必須）
+  - --seed-start N / --seed-end N または --seeds LIST（必須）
+  - --tuples LIST（省略可、デフォルト: 4,6）
+  - --avescope N（省略可、デフォルト: 1000）
+  - --run-ts TS（省略可、timestamp を含むログのみ対象）
+  - --log-root / --output-root（省略可）
+- 例:
+  - ./training/run_export_score_averages_for_run_name.sh --run-name 20260123_0300__nostage --seed-start 5 --seed-end 14 --avescope 1000
+
+### run_eval_scores_from_dat.sh
+- 目的: 学習済み .dat を読み込み、指定ゲーム数（デフォルト: 10000）をプレイして、1000ゲーム単位の平均/標準偏差をCSVに出力
+- 入力: ntuple_dat/<run_name>/seed<seed>/NT{4|6}_{sym|notsym}/ の *.dat
+- 出力: analysis_outputs/training_scores_from_dat/<run_name>/NT{4|6}/{sym|notsym}/score_seed<seed>_NT{tuple}_{sym}_stage<stage>.csv
+- 主な引数:
+  - --run-name NAME（必須）
+  - --seed-start N / --seed-end N または --seeds LIST（必須）
+  - --stage N（省略可、デフォルト: 9）
+  - --tuples LIST（省略可、デフォルト: 4,6）
+  - --sym-list LIST（省略可、デフォルト: sym,notsym）
+  - --games N（省略可、デフォルト: 10000）
+  - --avescope N（省略可、デフォルト: 1000）
+  - --parallel N（省略可、デフォルト: 1）
+  - --nostage（nostage dat 用に SINGLE_STAGE 固定で実行）
+  - --dat-root / --output-root（省略可）
+- 例:
+  - ./training/run_eval_scores_from_dat.sh --run-name 20260124_1700_OI1200__stage --seed-start 5 --seed-end 14 --stage 9 --tuples 4 --sym-list sym,notsym
+  - ./training/run_eval_scores_from_dat.sh --run-name 20260123_0300__nostage --seed-start 5 --seed-end 14 --stage 9 --nostage
+
 ### run_plot_and_summary.sh
 - 目的: LOG_ROOT 配下のログをまとめて可視化・要約
 

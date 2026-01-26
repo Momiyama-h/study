@@ -13,7 +13,7 @@ Options:
   --ev-stages LIST   comma-separated stage list (e.g. 0,1,2 or 9) (required)
   --tuples LIST      comma-separated tuples (default: 4,6)
   --sym-list LIST    comma-separated sym list (default: sym,notsym)
-  --game-count N     game count per eval (default: 10000)
+  --game-count N     game count per eval (default: 100)
   --parallel N       max parallel jobs (default: nproc)
   --board-root PATH  board_data root (default: /HDD/momiyama2/data/study/board_data)
   --dat-root PATH    ntuple_dat root (default: /HDD/momiyama2/data/study/ntuple_dat)
@@ -30,7 +30,7 @@ SEED_END=""
 EV_STAGES=""
 TUPLES="4,6"
 SYM_LIST="sym,notsym"
-GAME_COUNT=10000
+GAME_COUNT=100
 PARALLEL="$(nproc)"
 BOARD_ROOT="/HDD/momiyama2/data/study/board_data"
 DAT_ROOT="/HDD/momiyama2/data/study/ntuple_dat"
