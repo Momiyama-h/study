@@ -197,6 +197,7 @@ arg_parser.add_argument(
     choices=[
         "acc",
         "acc-mean",
+        "acc-mean-symdiff",
         "acc-diff",
         "err-rel-mean",
         "err-rel",
@@ -378,6 +379,12 @@ elif args.graph == "acc-mean":
     result = accuracy.calc_accuracy_mean_data(
         player_data_list=player_data_list,
     )
+elif args.graph == "acc-mean-symdiff":
+    output_name = args.output if args.output else "accuracy_mean_symdiff.pdf"
+
+    result = accuracy.calc_accuracy_mean_data(
+        player_data_list=player_data_list,
+    )
 elif args.graph == "acc-diff":
     output_name = args.output if args.output else "acc-diff.pdf"
 
@@ -510,6 +517,7 @@ if result:
             del k_config["order"]
         if args.graph in (
             "acc-mean",
+            "acc-mean-symdiff",
             "err-abs-mean",
             "err-rel-mean",
             "surv-mean",

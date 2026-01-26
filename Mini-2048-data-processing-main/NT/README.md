@@ -57,7 +57,7 @@ BOARD_DATA_ROOT=../board_data/20260116_2145_6sym_seed0_g10000 ./a.out 0 100 6tup
 
 eval_state.cpp を動かします。
 
-- eval-state-PP.txt (state から遷移可能な afterstate の評価値の一覧ファイル)
+- eval-state-<safe_name>.txt (state から遷移可能な afterstate の評価値の一覧ファイル)
   このファイルが出てきます。
 
 # 動かしかた

@@ -52,7 +52,7 @@ g++ eval_state.cpp -O2 -std=c++20 -o eval_state
 補足:
 - `SINGLE_STAGE` の .dat では `-DSINGLE_STAGE` を付けてビルドする。
 出力:
-- `../board_data/eval-state-<load-player-name>.txt`
+- `../board_data/eval-state-<safe_name>.txt`
 
 ### eval_after_state.cpp
 コンパイル:
@@ -66,7 +66,7 @@ g++ eval_after_state.cpp -O2 -std=c++20 -o eval_after_state
 補足:
 - `SINGLE_STAGE` の .dat では `-DSINGLE_STAGE` を付けてビルドする。
 出力:
-- `../board_data/eval-after-state-<load-player-name>.txt`
+- `../board_data/eval-after-state-<safe_name>.txt`
 
 ### play_evalafterstates.cpp
 コンパイル:

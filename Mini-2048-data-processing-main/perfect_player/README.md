@@ -35,7 +35,7 @@ g++ Play_perfect_player.cpp -std=c++20 -mcmodel=large
 
 eval_state.cpp を動かします。
 
-- eval-state-NT4.txt (state から遷移可能な afterstate の評価値の一覧ファイル)
+- eval-state-<safe_name>.txt (state から遷移可能な afterstate の評価値の一覧ファイル)
   このファイルが出てきます。
 
 # 動かしかた
@@ -61,7 +61,7 @@ g++ eval_state.cpp -std=c++20 -mcmodel=large
 
 eval_after_state.cpp を動かします。
 
-- eval-after-state-NT4.txt (after state の評価値の一覧ファイル,scatter を書くのに使う)
+- eval-after-state-<safe_name>.txt (after state の評価値の一覧ファイル,scatter を書くのに使う)
 
 # 動かしかた
 

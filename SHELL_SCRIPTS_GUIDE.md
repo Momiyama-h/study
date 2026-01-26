@@ -107,7 +107,7 @@
 - 目的: run_name 配下の board_data から任意グラフを生成（共通スクリプト）
 - 必須引数:
   - --run-name NAME
-  - --graph GRAPH（acc|err-rel|err-abs|surv|surv-diff|evals|scatter|scatter_v2）
+  - --graph GRAPH（acc|err-rel|err-abs|surv|surv-diff|evals|scatter|scatter_v2|acc-mean|acc-mean-symdiff|err-abs-mean|err-rel-mean）
 - オプション:
   - --output-name NAME: 出力ファイルのベース名（デフォルト: graph名）
   - --ext EXT: 拡張子（デフォルト: png）
@@ -121,6 +121,8 @@
   - /HDD/momiyama2/data/study/analysis_outputs/<run_name>/NT{4|6}/{graph}/{sym|notsym}/
 - 例:
   - ./run_graph_for_run_name.sh --run-name 20260123_0300__nostage --graph acc --seed-start 5 --seed-end 14 --stage 9 --output-name acc_stage9
+  - ./run_graph_for_run_name.sh --run-name 20260123_0300__nostage --graph acc-mean --seed-start 5 --seed-end 14 --stage 9 --output-name acc_mean_stage9
+  - ./run_graph_for_run_name.sh --run-name 20260123_0300__nostage --graph acc-mean-symdiff --seed-start 5 --seed-end 14 --stage 9 --output-name acc_mean_symdiff_stage9
 
 ### run_acc_for_run_name.sh / run_err_rel_for_run_name.sh / run_surv_for_run_name.sh / run_surv_diff_for_run_name.sh / run_evals_for_run_name.sh
 - 目的: run_graph_for_run_name.sh の薄いラッパー（graph 固定）

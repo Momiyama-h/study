@@ -8,7 +8,7 @@ Usage:
 
 Options:
   --run-name NAME      run_name under board_data (required)
-  --graph GRAPH        analysis type (required: acc|acc-mean|err-rel|err-rel-mean|err-abs|err-abs-mean|surv|surv-mean|surv-diff|surv-diff-mean|evals|evals-mean|scatter|scatter_v2)
+  --graph GRAPH        analysis type (required: acc|acc-mean|acc-mean-symdiff|err-rel|err-rel-mean|err-abs|err-abs-mean|surv|surv-mean|surv-diff|surv-diff-mean|evals|evals-mean|scatter|scatter_v2)
   --output-name NAME   output filename without extension (default: <graph>)
   --ext EXT            output extension (default: png)
   --seed-start N       start seed (optional)
@@ -32,6 +32,7 @@ STAGE=""
 TUPLES="4,6"
 SYM_LIST="sym,notsym"
 PARALLEL="$(nproc)"
+SPLIT_SYM=1
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -57,6 +58,9 @@ if [[ -z "$RUN_NAME" || -z "$GRAPH" ]]; then
 fi
 if [[ "$GRAPH" == *"-mean" ]]; then
   COMBINE_SEEDS=1
+fi
+if [[ "$GRAPH" == "acc-mean-symdiff" ]]; then
+  SPLIT_SYM=0
 fi
 
 if [[ -z "$OUTPUT_NAME" ]]; then
@@ -86,7 +90,10 @@ run_graph() {
   shift 3
   local seed_args=("$@")
 
-  local out_dir="$OUT_BASE/$RUN_NAME/NT${tuple}/${GRAPH}/${sym}"
+  local out_dir="$OUT_BASE/$RUN_NAME/NT${tuple}/${GRAPH}"
+  if [ -n "$sym" ]; then
+    out_dir="$out_dir/${sym}"
+  fi
   mkdir -p "$out_dir"
 
   local output_file="${OUTPUT_NAME}.${EXT}"
@@ -95,7 +102,10 @@ run_graph() {
   fi
   local cmd=(uv run -m graph "$GRAPH" --recursive --intersection "$RUN_NAME" \
     --output "$output_file" --output-dir "$out_dir")
-  cmd+=(--tuple "$tuple" --sym "$sym")
+  cmd+=(--tuple "$tuple")
+  if [ -n "$sym" ]; then
+    cmd+=(--sym "$sym")
+  fi
   if [ -n "$STAGE" ]; then
     cmd+=(--stage "$STAGE")
   fi
@@ -123,25 +133,37 @@ if [ -n "$SEED_START" ] && [ -n "$SEED_END" ]; then
       seed_args+=("$s")
     done
     for tuple in "${TUPLE_ARR[@]}"; do
-      for sym in "${SYM_ARR[@]}"; do
-        spawn_job "$tuple" "$sym" "seed${SEED_START}-${SEED_END}" "${seed_args[@]}"
-      done
+      if [ "$SPLIT_SYM" -eq 1 ]; then
+        for sym in "${SYM_ARR[@]}"; do
+          spawn_job "$tuple" "$sym" "seed${SEED_START}-${SEED_END}" "${seed_args[@]}"
+        done
+      else
+        spawn_job "$tuple" "" "seed${SEED_START}-${SEED_END}" "${seed_args[@]}"
+      fi
     done
   else
     for ((s=SEED_START; s<=SEED_END; s++)); do
       seed_args=(--seed "$s")
       for tuple in "${TUPLE_ARR[@]}"; do
-        for sym in "${SYM_ARR[@]}"; do
-          spawn_job "$tuple" "$sym" "seed${s}" "${seed_args[@]}"
-        done
+        if [ "$SPLIT_SYM" -eq 1 ]; then
+          for sym in "${SYM_ARR[@]}"; do
+            spawn_job "$tuple" "$sym" "seed${s}" "${seed_args[@]}"
+          done
+        else
+          spawn_job "$tuple" "" "seed${s}" "${seed_args[@]}"
+        fi
       done
     done
   fi
 else
   for tuple in "${TUPLE_ARR[@]}"; do
-    for sym in "${SYM_ARR[@]}"; do
-      spawn_job "$tuple" "$sym" ""
-    done
+    if [ "$SPLIT_SYM" -eq 1 ]; then
+      for sym in "${SYM_ARR[@]}"; do
+        spawn_job "$tuple" "$sym" ""
+      done
+    else
+      spawn_job "$tuple" "" ""
+    fi
   done
 fi
 
