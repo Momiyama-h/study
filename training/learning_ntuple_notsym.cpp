@@ -3,6 +3,7 @@
 #include <cfloat>
 #include <ctime>
 #include<cmath>
+#include <time.h>
 #include <random>
 #include <filesystem>
 #include <string>
@@ -58,8 +59,17 @@ int global_seed = 0;
 FILE *csv_fp = nullptr;
 FILE *board_log_fp = nullptr;
 FILE *score_log_fp = nullptr;
+static time_t score_log_start_time = 0;
+static double score_log_start_cpu = 0.0;
 static fs::path output_dir;
 static string run_name;
+
+static double cpu_seconds()
+{
+  timespec ts{};
+  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &ts);
+  return (double)ts.tv_sec + (double)ts.tv_nsec * 1e-9;
+}
 
 // 追跡するタプルIDを指定（必要に応じて変更）
 #if defined(USE_4TUPLE) || defined(NT4A)
@@ -110,7 +120,7 @@ void openScoreLog()
     fprintf(stderr, "Failed to open %s\n", score_path.string().c_str());
     return;
   }
-  fprintf(score_log_fp, "game_id,avg_score,traincount_total\n");
+  fprintf(score_log_fp, "game_id,avg_score,traincount_total,elapsed_cpu_seconds\n");
   fflush(score_log_fp);
 }
 
@@ -328,6 +338,8 @@ int main(int argc, char* argv[])
   openCsvLog();
   openBoardLog();
   openScoreLog();
+  score_log_start_time = time(nullptr);
+  score_log_start_cpu = cpu_seconds();
 
   // タプル情報の出力
   STDOUT_LOG("=== Loaded Tuples Information ===\n");
@@ -419,13 +431,14 @@ int main(int argc, char* argv[])
           logTupleStats(gid+1, state.score, turn, lastboard);
           score_sum += state.score;
           score_cnt += 1;
-          if ((gid + 1) % 10000 == 0 && score_log_fp) {
-            double avg = score_cnt ? (double)score_sum / score_cnt : 0.0;
-            fprintf(score_log_fp, "%d,%.6f,%d\n", gid + 1, avg, traincount);
-            fflush(score_log_fp);
-            score_sum = 0;
-            score_cnt = 0;
-          }
+        if ((gid + 1) % 10000 == 0 && score_log_fp) {
+          double avg = score_cnt ? (double)score_sum / score_cnt : 0.0;
+          double elapsed_cpu = cpu_seconds() - score_log_start_cpu;
+          fprintf(score_log_fp, "%d,%.6f,%d,%.6f\n", gid + 1, avg, traincount, elapsed_cpu);
+          fflush(score_log_fp);
+          score_sum = 0;
+          score_cnt = 0;
+        }
 	break;
       }
     }

@@ -16,6 +16,16 @@ RUN_NAME_BASE="${RUN_NAME_BASE:-trainonly_${SEED_SPEC}_${RUN_TS}}"
 STAGE_MODES_STR="${STAGE_MODES:-nostage stage}"
 STAGE_MODES_STR="${STAGE_MODES_STR//,/ }"
 read -r -a STAGE_MODES <<< "$STAGE_MODES_STR"
+PARALLEL_BY_SEED=0
+
+if [[ "${1:-}" == "--sequential" ]]; then
+  PARALLEL=1
+  shift
+fi
+if [[ "${1:-}" == "--parallel-by-seed" ]]; then
+  PARALLEL_BY_SEED=1
+  shift
+fi
 
 compile_train() {
   local src="$1"
@@ -52,6 +62,17 @@ spawn_job() {
   fi
 }
 
+run_seed_bundle() {
+  local seed="$1"
+  local stage_tag="$2"
+  local run_name="$3"
+  local bin_suffix="$4"
+  run_one 4 sym "$BASE_MINI/learn_4sym${bin_suffix}" "$seed" "$stage_tag" "$run_name"
+  run_one 4 notsym "$BASE_MINI/learn_4notsym${bin_suffix}" "$seed" "$stage_tag" "$run_name"
+  run_one 6 sym "$BASE_MINI/learn_6sym${bin_suffix}" "$seed" "$stage_tag" "$run_name"
+  run_one 6 notsym "$BASE_MINI/learn_6notsym${bin_suffix}" "$seed" "$stage_tag" "$run_name"
+}
+
 for stage_mode in "${STAGE_MODES[@]}"; do
   case "$stage_mode" in
     stage)
@@ -78,12 +99,23 @@ for stage_mode in "${STAGE_MODES[@]}"; do
   compile_train "$BASE_MINI/learning_ntuple_notsym.cpp" "$BASE_MINI/learn_4notsym${bin_suffix}" "-DUSE_4TUPLE $train_flags"
 
   JOBS=0
-  for seed in "${SEEDS[@]}"; do
-    spawn_job 4 sym "$BASE_MINI/learn_4sym${bin_suffix}" "$seed" "$stage_tag" "$run_name"
-    spawn_job 4 notsym "$BASE_MINI/learn_4notsym${bin_suffix}" "$seed" "$stage_tag" "$run_name"
-    spawn_job 6 sym "$BASE_MINI/learn_6sym${bin_suffix}" "$seed" "$stage_tag" "$run_name"
-    spawn_job 6 notsym "$BASE_MINI/learn_6notsym${bin_suffix}" "$seed" "$stage_tag" "$run_name"
-  done
+  if [[ "$PARALLEL_BY_SEED" -eq 1 ]]; then
+    for seed in "${SEEDS[@]}"; do
+      run_seed_bundle "$seed" "$stage_tag" "$run_name" "$bin_suffix" &
+      JOBS=$((JOBS+1))
+      if [ "$JOBS" -ge "$PARALLEL" ]; then
+        wait -n
+        JOBS=$((JOBS-1))
+      fi
+    done
+  else
+    for seed in "${SEEDS[@]}"; do
+      spawn_job 4 sym "$BASE_MINI/learn_4sym${bin_suffix}" "$seed" "$stage_tag" "$run_name"
+      spawn_job 4 notsym "$BASE_MINI/learn_4notsym${bin_suffix}" "$seed" "$stage_tag" "$run_name"
+      spawn_job 6 sym "$BASE_MINI/learn_6sym${bin_suffix}" "$seed" "$stage_tag" "$run_name"
+      spawn_job 6 notsym "$BASE_MINI/learn_6notsym${bin_suffix}" "$seed" "$stage_tag" "$run_name"
+    done
+  fi
   wait
   echo "== Completed stage_mode=${stage_tag} =="
   echo

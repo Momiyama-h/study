@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <cfloat>
 #include <ctime>
+#include <time.h>
 #include <random>
 #include <filesystem>
 #include <string>
@@ -57,6 +58,15 @@ int global_seed = 0;
 FILE *csv_fp = nullptr;
 FILE *board_log_fp = nullptr;
 FILE *score_log_fp = nullptr;
+static time_t score_log_start_time = 0;
+static double score_log_start_cpu = 0.0;
+
+static double cpu_seconds()
+{
+  timespec ts{};
+  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &ts);
+  return (double)ts.tv_sec + (double)ts.tv_nsec * 1e-9;
+}
 static fs::path output_dir;
 static string run_name;
 
@@ -102,7 +112,7 @@ void openScoreLog()
     fprintf(stderr, "Failed to open %s\n", score_path.string().c_str());
     return;
   }
-  fprintf(score_log_fp, "game_id,avg_score,traincount_total\n");
+  fprintf(score_log_fp, "game_id,avg_score,traincount_total,elapsed_cpu_seconds\n");
   fflush(score_log_fp);
 }
 
@@ -252,6 +262,8 @@ int main(int argc, char* argv[])
   openCsvLog();
   openBoardLog();
   openScoreLog();
+  score_log_start_time = time(nullptr);
+  score_log_start_cpu = cpu_seconds();
 
   int traincount = 0;
   long long score_sum = 0;
@@ -305,7 +317,8 @@ int main(int argc, char* argv[])
         score_cnt += 1;
         if ((gid + 1) % 10000 == 0 && score_log_fp) {
           double avg = score_cnt ? (double)score_sum / score_cnt : 0.0;
-          fprintf(score_log_fp, "%d,%.6f,%d\n", gid + 1, avg, traincount);
+          double elapsed_cpu = cpu_seconds() - score_log_start_cpu;
+          fprintf(score_log_fp, "%d,%.6f,%d,%.6f\n", gid + 1, avg, traincount, elapsed_cpu);
           fflush(score_log_fp);
           score_sum = 0;
           score_cnt = 0;
