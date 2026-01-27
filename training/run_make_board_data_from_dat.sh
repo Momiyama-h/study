@@ -8,6 +8,7 @@ Usage:
 
 Options:
   --run-name NAME    run_name (required)
+  --dat-run-name NAME  run_name for dat lookup (default: same as --run-name)
   --seed-start N     start seed (required)
   --seed-end N       end seed (required)
   --ev-stages LIST   comma-separated stage list (e.g. 0,1,2 or 9) (required)
@@ -25,6 +26,7 @@ USAGE
 }
 
 RUN_NAME=""
+DAT_RUN_NAME=""
 SEED_START=""
 SEED_END=""
 EV_STAGES=""
@@ -41,6 +43,7 @@ SINGLE_STAGE=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --run-name) RUN_NAME="$2"; shift 2;;
+    --dat-run-name) DAT_RUN_NAME="$2"; shift 2;;
     --seed-start) SEED_START="$2"; shift 2;;
     --seed-end) SEED_END="$2"; shift 2;;
     --ev-stages) EV_STAGES="$2"; shift 2;;
@@ -61,6 +64,9 @@ done
 if [[ -z "$RUN_NAME" || -z "$SEED_START" || -z "$SEED_END" || -z "$EV_STAGES" ]]; then
   echo "ERROR: --run-name/--seed-start/--seed-end/--ev-stages are required." >&2
   exit 1
+fi
+if [[ -z "$DAT_RUN_NAME" ]]; then
+  DAT_RUN_NAME="$RUN_NAME"
 fi
 if [[ "$RUN_NAME" == *nostage* ]]; then
   SINGLE_STAGE=1
@@ -87,7 +93,7 @@ run_one() {
   local sym="$3"
   local stage="$4"
 
-  local dat_dir="${DAT_ROOT}/${RUN_NAME}/seed${seed}/NT${tuple}_${sym}"
+  local dat_dir="${DAT_ROOT}/${DAT_RUN_NAME}/seed${seed}/NT${tuple}_${sym}"
   local evfile="${dat_dir}/${tuple}tuple_${sym}_data_${seed}_${stage}.dat"
   if [ ! -f "$evfile" ]; then
     echo "MISSING: $evfile" >&2

@@ -42,6 +42,8 @@
   - --run-name NAME
   - --seed-start N --seed-end N
   - --ev-stages LIST（例: 9 または 0,1,2）
+- 追加オプション:
+  - --dat-run-name NAME: dat 探索用の run_name（省略時は --run-name と同じ）
 - オプション:
   - --force-meta: meta.json の不一致を検出した場合に上書き再生成
   - --overwrite: 既存の board_data を削除して再生成
