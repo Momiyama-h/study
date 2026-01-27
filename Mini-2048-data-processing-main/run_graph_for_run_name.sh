@@ -100,7 +100,15 @@ run_graph() {
   if [ -n "$seed_tag" ]; then
     output_file="${OUTPUT_NAME}_${seed_tag}.${EXT}"
   fi
-  local cmd=(uv run -m graph "$GRAPH" --recursive --intersection "$RUN_NAME" \
+  local run_name_regex
+  run_name_regex="$(python3 - <<'PY' "$RUN_NAME"
+import re
+import sys
+name = sys.argv[1]
+print("^" + re.escape(name) + "(/|$)")
+PY
+)"
+  local cmd=(uv run -m graph "$GRAPH" --recursive --intersection "$run_name_regex" \
     --output "$output_file" --output-dir "$out_dir")
   cmd+=(--tuple "$tuple")
   if [ -n "$sym" ]; then
