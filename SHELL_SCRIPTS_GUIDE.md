@@ -184,6 +184,20 @@
 
 ## Mini-2048-data-processing-main/
 
+### run_score_log_for_run_name.sh
+- 目的: log_score.csv（traincount vs average_score）を読み込み、NT4/NT6・sym/notsym を重ねたグラフを作成
+- 入力:
+  - /HDD/momiyama2/data/study/ntuple_dat/<run_name>/seed<seed>/NT{4|6}_{sym|notsym}/log_score.csv
+- 出力:
+  - /HDD/momiyama2/data/study/analysis_outputs/<run_name>/score_log.png
+- オプション:
+  - --split-nt: NT4/NT6 を別図に分けて出力（score_log_NT4.png / score_log_NT6.png）
+  - --output FILE: 出力ファイル名変更
+  - --dat-root / --out-root: 入出力のルート変更
+- 例:
+  - ./run_score_log_for_run_name.sh --run-name 20260128_0600_OI1200__stage
+  - ./run_score_log_for_run_name.sh --run-name 20260128_0600_OI1200__stage --split-nt
+
 ### run_scatter_for_run_name.sh
 - 目的: uv graph を実行し、analysis_outputs に保存
 - 出力先:

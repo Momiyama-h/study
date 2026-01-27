@@ -24,7 +24,7 @@ namespace fs = std::filesystem;
 #endif
 
 #ifndef STORAGE_FREQUENCY
-#define STORAGE_FREQUENCY (5*100000000LL)
+#define STORAGE_FREQUENCY (5*10000000LL)
 #endif
 #ifndef STORAGE_COUNT
 #define STORAGE_COUNT 10
