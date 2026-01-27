@@ -157,6 +157,7 @@
 - 補足:
   - run_name の一致判定は「完全一致」に寄せています（`^<run_name>/(|$)`）。
   - 例: `__stage` を指定しても `__stage_g100` は混ざりません。
+  - surv-diff 系は PP の `eval-after-state.txt` と対象 `state.txt` の progress 数が一致していない場合にエラーを返します。
 - 例:
   - ./run_graph_for_run_name.sh --run-name 20260123_0300__nostage --graph acc --seed-start 5 --seed-end 14 --stage 9 --output-name acc_stage9
   - ./run_graph_for_run_name.sh --run-name 20260123_0300__nostage --graph acc-mean --seed-start 5 --seed-end 14 --stage 9 --output-name acc_mean_stage9

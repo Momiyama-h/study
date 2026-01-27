@@ -42,6 +42,14 @@ def calc_survival_diff_rate_data(
         progress_text = re.findall(r"progress: (\d+)", text)
         progresses = [int(progress) for progress in progress_text]
 
+        if not progresses:
+            raise ValueError(f"{state_file} に progress がありません。state.txt を確認してください。")
+        if len(pp_survival_rate) < max(progresses) + 10:
+            raise ValueError(
+                f"PP生存率が短すぎます: pp_len={len(pp_survival_rate)}, "
+                f"needed={max(progresses) + 10}, state_file={state_file}"
+            )
+
         droped_counter = Counter(progresses)
         max_value = len(progresses)
         diff_survival_rate = []
@@ -81,6 +89,14 @@ def _calc_survival_diff_curve(pd: PlayerData, pp_survival_rate: list[float]) -> 
     # progress_text = re.findall(r"progress: (\\d+)", text)
     progress_text = re.findall(r"progress: (\d+)", text)
     progresses = [int(progress) for progress in progress_text]
+
+    if not progresses:
+        raise ValueError(f"{state_file} に progress がありません。state.txt を確認してください。")
+    if len(pp_survival_rate) < max(progresses) + 10:
+        raise ValueError(
+            f"PP生存率が短すぎます: pp_len={len(pp_survival_rate)}, "
+            f"needed={max(progresses) + 10}, state_file={state_file}"
+        )
 
     droped_counter = Counter(progresses)
     max_value = len(progresses)
