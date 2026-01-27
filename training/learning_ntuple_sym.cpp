@@ -23,7 +23,7 @@ namespace fs = std::filesystem;
 #endif
 
 #ifndef STORAGE_FREQUENCY
-#define STORAGE_FREQUENCY (5*100000000)
+#define STORAGE_FREQUENCY (5*10000000)
 #endif
 #ifndef STORAGE_COUNT
 #define STORAGE_COUNT 10
@@ -36,6 +36,9 @@ namespace fs = std::filesystem;
 #endif
 #ifndef ENABLE_BOARD_LOG
 #define ENABLE_BOARD_LOG 0
+#endif
+#ifndef ENABLE_SCORE_LOG
+#define ENABLE_SCORE_LOG 1
 #endif
 #ifndef ENABLE_STDOUT_LOG
 #define ENABLE_STDOUT_LOG 1
@@ -53,6 +56,7 @@ int storage_c = 0;
 int global_seed = 0;
 FILE *csv_fp = nullptr;
 FILE *board_log_fp = nullptr;
+FILE *score_log_fp = nullptr;
 static fs::path output_dir;
 static string run_name;
 
@@ -87,6 +91,27 @@ void closeBoardLog()
   }
 }
 
+void openScoreLog()
+{
+#if !ENABLE_SCORE_LOG
+  return;
+#endif
+  fs::path score_path = output_dir / "log_score.csv";
+  score_log_fp = fopen(score_path.string().c_str(), "w");
+  if (!score_log_fp) {
+    fprintf(stderr, "Failed to open %s\n", score_path.string().c_str());
+    return;
+  }
+  fprintf(score_log_fp, "game_id,avg_score,traincount_total\n");
+  fflush(score_log_fp);
+}
+
+void closeScoreLog()
+{
+  if (score_log_fp) {
+    fclose(score_log_fp);
+  }
+}
 void logBoard(int game_id, int turn, int score, const int* board)
 {
   if (!board_log_fp) return;
@@ -226,8 +251,11 @@ int main(int argc, char* argv[])
   initEvs(init_ev);
   openCsvLog();
   openBoardLog();
+  openScoreLog();
 
   int traincount = 0;
+  long long score_sum = 0;
+  int score_cnt = 0;
   for (int gid = 0; gid < MAX_GAMES; gid++) {
     state_t state = initGame();
     int turn = 0;
@@ -273,6 +301,15 @@ int main(int argc, char* argv[])
 	STDOUT_LOG("game %d finished with score %d\n", gid+1, state.score);
 	// ゲーム終了時に学習率を記録
 	logTupleStats(gid+1, state.score, turn, lastboard);
+        score_sum += state.score;
+        score_cnt += 1;
+        if ((gid + 1) % 10000 == 0 && score_log_fp) {
+          double avg = score_cnt ? (double)score_sum / score_cnt : 0.0;
+          fprintf(score_log_fp, "%d,%.6f,%d\n", gid + 1, avg, traincount);
+          fflush(score_log_fp);
+          score_sum = 0;
+          score_cnt = 0;
+        }
 	break;
       }
     }
@@ -280,6 +317,7 @@ int main(int argc, char* argv[])
 
   closeCsvLog();
   closeBoardLog();
+  closeScoreLog();
   fprintf(stderr, "Training finished before saving %d data\n", STORAGE_COUNT);
   return 0;
 }
