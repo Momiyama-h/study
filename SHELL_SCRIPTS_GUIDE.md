@@ -251,3 +251,19 @@
 - board_data は Mini-2048-data-processing-main/board_data を前提に探索されます（symlink 推奨）。
 - `--seed/--stage/--tuple` の絞り込みは meta.json が必要です。
 - scatter は PP 評価ファイルが必要（per-nt または board_data/PP）。
+
+### run_train_nt4a_trainonly.sh
+- 目的: NT4a (sym/notsym) の学習のみ実行（board_data/eval は作成しない）
+- 4tuple のタプルセットは NT4a を使用（-DNT4A）
+- 出力:
+  - .dat: /HDD/momiyama2/data/study/ntuple_dat/<run_name>/seed<seed>/NT4_{sym|notsym}/
+  - log: /HDD/momiyama2/data/study/training_logs/<run_name>/seed<seed>/NT4_{sym|notsym}/
+- 主な指定:
+  - --run-name-base, --seed-start/--seed-end or --seeds, --init-ev
+  - --nostage で stage+nostage 両方実行
+  - --parallel, --stdout-log
+- run_name 衝突時の挙動:
+  - 既存の NT4_sym/NT4_notsym が見つかると __nt4a を自動付与（--allow-collide で無効化）
+- 例:
+  - INIT_EV=1200 PARALLEL=16 RUN_NAME_BASE=20260124_1700_OI1200 \
+    ./training/run_train_nt4a_trainonly.sh
