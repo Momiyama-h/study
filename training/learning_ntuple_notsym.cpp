@@ -1,9 +1,12 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cfloat>
+#include <climits>
 #include <ctime>
-#include<cmath>
+#include <cmath>
 #include <time.h>
+#include <unistd.h>
+#include <chrono>
 #include <random>
 #include <filesystem>
 #include <string>
@@ -59,17 +62,28 @@ int global_seed = 0;
 FILE *csv_fp = nullptr;
 FILE *board_log_fp = nullptr;
 FILE *score_log_fp = nullptr;
-static time_t score_log_start_time = 0;
-static double score_log_start_cpu = 0.0;
+static uint64_t process_cpu_start_ns = 0;
+static uint64_t block_cpu_start_ns = 0;
+static uint64_t cpu_ns_eval_block = 0;
+static uint64_t cpu_ns_update_block = 0;
+static std::chrono::steady_clock::time_point process_wall_start;
+static std::chrono::steady_clock::time_point block_wall_start;
 static fs::path output_dir;
 static string run_name;
 
-static double cpu_seconds()
+static inline uint64_t now_cpu_ns_process()
 {
   timespec ts{};
   clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &ts);
-  return (double)ts.tv_sec + (double)ts.tv_nsec * 1e-9;
+  return (uint64_t)ts.tv_sec * 1000000000ull + (uint64_t)ts.tv_nsec;
 }
+
+struct CpuAccum {
+  uint64_t &acc;
+  uint64_t st;
+  explicit CpuAccum(uint64_t &a) : acc(a), st(now_cpu_ns_process()) {}
+  ~CpuAccum() { acc += (now_cpu_ns_process() - st); }
+};
 
 // 追跡するタプルIDを指定（必要に応じて変更）
 #if defined(USE_4TUPLE) || defined(NT4A)
@@ -109,19 +123,26 @@ void closeBoardLog()
   }
 }
 
-void openScoreLog()
+void openScoreLog(const char* condition)
 {
 #if !ENABLE_SCORE_LOG
   return;
 #endif
-  fs::path score_path = output_dir / "log_score.csv";
+  const int pid = (int)getpid();
+  char fname[256];
+  snprintf(fname, sizeof(fname), "log_score_%s_seed%d_pid%d.csv",
+           condition, global_seed, pid);
+  fs::path score_path = output_dir / fname;
   score_log_fp = fopen(score_path.string().c_str(), "w");
   if (!score_log_fp) {
     fprintf(stderr, "Failed to open %s\n", score_path.string().c_str());
     return;
   }
-  fprintf(score_log_fp, "game_id,avg_score,traincount_total,elapsed_cpu_seconds\n");
-  fflush(score_log_fp);
+  fprintf(score_log_fp,
+          "condition,seed,pid,games_total,block_games,"
+          "score_mean,score_sd,score_min,score_max,"
+          "cpu_sec_total,cpu_sec_block,cpu_sec_eval,cpu_sec_update,cpu_sec_other,share_update,"
+          "wall_sec_total,wall_sec_block\n");
 }
 
 void closeScoreLog()
@@ -337,9 +358,19 @@ int main(int argc, char* argv[])
 
   openCsvLog();
   openBoardLog();
-  openScoreLog();
-  score_log_start_time = time(nullptr);
-  score_log_start_cpu = cpu_seconds();
+  const char* condition =
+#if defined(USE_4TUPLE) || defined(NT4A)
+      "nt4_notsym";
+#else
+      "nt6_notsym";
+#endif
+  openScoreLog(condition);
+  process_cpu_start_ns = now_cpu_ns_process();
+  block_cpu_start_ns = process_cpu_start_ns;
+  process_wall_start = std::chrono::steady_clock::now();
+  block_wall_start = process_wall_start;
+  cpu_ns_eval_block = 0;
+  cpu_ns_update_block = 0;
 
   // タプル情報の出力
   STDOUT_LOG("=== Loaded Tuples Information ===\n");
@@ -370,7 +401,11 @@ int main(int argc, char* argv[])
 
   int traincount = 0;
   long long score_sum = 0;
-  int score_cnt = 0;
+  long long score_sumsq = 0;
+  int score_min = INT_MAX;
+  int score_max = INT_MIN;
+  int block_games = 0;
+  int total_games = 0;
   for (int gid = 0; gid < MAX_GAMES; gid++) {
     state_t state = initGame();
     int turn = 0;
@@ -383,9 +418,17 @@ int main(int argc, char* argv[])
       for (int d = 0; d < 4; d++) {
 	if (play(d, state, &copy)) {
 #if defined(USE_4TUPLE) || defined(NT4A)
-	  double ev_r = calcEv(copy.board) + (copy.score - state.score);
+	  double ev_r = 0.0;
+	  {
+	    CpuAccum acc(cpu_ns_eval_block);
+	    ev_r = calcEv(copy.board) + (copy.score - state.score);
+	  }
 #else
-	  double ev_r = NT6_notsym::calcEv(copy.board) + (copy.score - state.score);
+	  double ev_r = 0.0;
+	  {
+	    CpuAccum acc(cpu_ns_eval_block);
+	    ev_r = NT6_notsym::calcEv(copy.board) + (copy.score - state.score);
+	  }
 #endif
 	  if (ev_r > max_ev_r) {
 	    max_ev_r = ev_r;
@@ -403,9 +446,25 @@ int main(int argc, char* argv[])
       play(selected, state, &state);
       if (turn > 1) {
 #if defined(USE_4TUPLE) || defined(NT4A)
-          update(lastboard, max_ev_r - calcEv(lastboard));
+          {
+            CpuAccum acc(cpu_ns_update_block);
+            double target = 0.0;
+            {
+              CpuAccum acc_eval(cpu_ns_eval_block);
+              target = max_ev_r - calcEv(lastboard);
+            }
+            update(lastboard, target);
+          }
 #else
-          NT6_notsym::update(lastboard, max_ev_r - NT6_notsym::calcEv(lastboard));
+          {
+            CpuAccum acc(cpu_ns_update_block);
+            double target = 0.0;
+            {
+              CpuAccum acc_eval(cpu_ns_eval_block);
+              target = max_ev_r - NT6_notsym::calcEv(lastboard);
+            }
+            NT6_notsym::update(lastboard, target);
+          }
 #endif
 	traincount++;
 	if (traincount % STORAGE_FREQUENCY == 0) saveEvs();
@@ -420,9 +479,25 @@ int main(int argc, char* argv[])
 
       if (gameOver(state)) {
 #if defined(USE_4TUPLE) || defined(NT4A)
-          update(lastboard, 0 - calcEv(lastboard));
+          {
+            CpuAccum acc(cpu_ns_update_block);
+            double target = 0.0;
+            {
+              CpuAccum acc_eval(cpu_ns_eval_block);
+              target = 0 - calcEv(lastboard);
+            }
+            update(lastboard, target);
+          }
 #else
-          NT6_notsym::update(lastboard, 0 - NT6_notsym::calcEv(lastboard));
+          {
+            CpuAccum acc(cpu_ns_update_block);
+            double target = 0.0;
+            {
+              CpuAccum acc_eval(cpu_ns_eval_block);
+              target = 0 - NT6_notsym::calcEv(lastboard);
+            }
+            NT6_notsym::update(lastboard, target);
+          }
 #endif
 	traincount++;
 	if (traincount % STORAGE_FREQUENCY == 0) saveEvs();
@@ -430,14 +505,56 @@ int main(int argc, char* argv[])
           // ゲーム終了時に特定タプルの学習状態を記録
           logTupleStats(gid+1, state.score, turn, lastboard);
           score_sum += state.score;
-          score_cnt += 1;
-        if ((gid + 1) % 10000 == 0 && score_log_fp) {
-          double avg = score_cnt ? (double)score_sum / score_cnt : 0.0;
-          double elapsed_cpu = cpu_seconds() - score_log_start_cpu;
-          fprintf(score_log_fp, "%d,%.6f,%d,%.6f\n", gid + 1, avg, traincount, elapsed_cpu);
-          fflush(score_log_fp);
+          score_sumsq += 1LL * state.score * state.score;
+          if (state.score < score_min) score_min = state.score;
+          if (state.score > score_max) score_max = state.score;
+          block_games++;
+          total_games++;
+        if (block_games == 10000 && score_log_fp) {
+          const double n = (double)block_games;
+          const double mean = n > 0 ? (double)score_sum / n : 0.0;
+          double var = 0.0;
+          if (block_games >= 2) {
+            var = ((double)score_sumsq - (double)score_sum * (double)score_sum / n) / (n - 1.0);
+            if (var < 0.0) var = 0.0;
+          }
+          const double sd = sqrt(var);
+
+          const uint64_t block_cpu_end = now_cpu_ns_process();
+          const double cpu_sec_total =
+              (double)(block_cpu_end - process_cpu_start_ns) / 1e9;
+          const double cpu_sec_block =
+              (double)(block_cpu_end - block_cpu_start_ns) / 1e9;
+          const double cpu_sec_eval = (double)cpu_ns_eval_block / 1e9;
+          const double cpu_sec_update = (double)cpu_ns_update_block / 1e9;
+          double cpu_sec_other = cpu_sec_block - cpu_sec_eval - cpu_sec_update;
+          if (cpu_sec_other < 0.0) cpu_sec_other = 0.0;
+          const double share_update =
+              (cpu_sec_block > 0.0) ? (cpu_sec_update / cpu_sec_block) : 0.0;
+
+          const auto wall_now = std::chrono::steady_clock::now();
+          const double wall_sec_total =
+              std::chrono::duration<double>(wall_now - process_wall_start).count();
+          const double wall_sec_block =
+              std::chrono::duration<double>(wall_now - block_wall_start).count();
+
+          fprintf(score_log_fp,
+                  "%s,%d,%d,%d,%d,%.6f,%.6f,%d,%d,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f\n",
+                  condition, global_seed, (int)getpid(),
+                  total_games, block_games,
+                  mean, sd, score_min, score_max,
+                  cpu_sec_total, cpu_sec_block, cpu_sec_eval, cpu_sec_update,
+                  cpu_sec_other, share_update, wall_sec_total, wall_sec_block);
+
           score_sum = 0;
-          score_cnt = 0;
+          score_sumsq = 0;
+          score_min = INT_MAX;
+          score_max = INT_MIN;
+          block_games = 0;
+          cpu_ns_eval_block = 0;
+          cpu_ns_update_block = 0;
+          block_cpu_start_ns = now_cpu_ns_process();
+          block_wall_start = std::chrono::steady_clock::now();
         }
 	break;
       }
