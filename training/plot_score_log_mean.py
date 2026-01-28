@@ -104,7 +104,7 @@ def plot_for_tuple(out_dir: Path, prefix: str, tuple_id: int, sym_list, buckets,
             [m - s for m, s in zip(means, sds)],
             [m + s for m, s in zip(means, sds)],
             color=color,
-            alpha=0.12,
+            alpha=0.03,
         )
 
     plt.xlabel("traincount_total" if x_axis == "update" else "cpu_sec_total")
