@@ -139,7 +139,7 @@ void openScoreLog(const char* condition)
     return;
   }
   fprintf(score_log_fp,
-          "condition,seed,pid,games_total,block_games,"
+          "condition,seed,pid,games_total,block_games,traincount_total,"
           "score_mean,score_sd,score_min,score_max,"
           "cpu_sec_total,cpu_sec_block,cpu_sec_eval,cpu_sec_update,cpu_sec_other,share_update,"
           "wall_sec_total,wall_sec_block\n");
@@ -539,9 +539,9 @@ int main(int argc, char* argv[])
               std::chrono::duration<double>(wall_now - block_wall_start).count();
 
           fprintf(score_log_fp,
-                  "%s,%d,%d,%d,%d,%.6f,%.6f,%d,%d,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f\n",
+                  "%s,%d,%d,%d,%d,%d,%.6f,%.6f,%d,%d,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f\n",
                   condition, global_seed, (int)getpid(),
-                  total_games, block_games,
+                  total_games, block_games, traincount,
                   mean, sd, score_min, score_max,
                   cpu_sec_total, cpu_sec_block, cpu_sec_eval, cpu_sec_update,
                   cpu_sec_other, share_update, wall_sec_total, wall_sec_block);
