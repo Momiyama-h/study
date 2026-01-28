@@ -221,7 +221,7 @@ void logTupleStats(int game_id, int score, int total_turns, const int* board)
 
   // 盤面インデックス計算（固定盤面を使用）
   int index = 0;
-#if defined(USE_4TUPLE) || defined(NT4A)
+#if defined(USE_5TUPLE) || defined(USE_4TUPLE) || defined(NT4A)
   for (int k = 0; k < TUPLE_SIZE; k++) {
     index = index * VARIATION_TILE + FIXED_BOARD[pos[TRACKED_TUPLE_ID[0]][k]];
   }
@@ -243,7 +243,7 @@ void logTupleStats(int game_id, int score, int total_turns, const int* board)
   for (int i = 0; i < NUM_TRACKED; i++) {
     const int tuple_id = TRACKED_TUPLE_ID[i];
     int tindex = 0;
-#if defined(USE_4TUPLE) || defined(NT4A)
+#if defined(USE_5TUPLE) || defined(USE_4TUPLE) || defined(NT4A)
     for (int k = 0; k < TUPLE_SIZE; k++) {
       tindex = tindex * VARIATION_TILE + FIXED_BOARD[pos[tuple_id][k]];
     }
@@ -305,7 +305,7 @@ void logTupleStats(int game_id, int score, int total_turns, const int* board)
 void saveEvs()
 {
   char filename[1024];
-#if defined(USE_4TUPLE) || defined(NT4A)
+#if defined(USE_5TUPLE) || defined(USE_4TUPLE) || defined(NT4A)
   sprintf(filename, "4tuple_notsym_data_%d_%d.dat", global_seed, storage_c++);
 #else
   sprintf(filename, "6tuple_notsym_data_%d_%d.dat", global_seed, storage_c++);
@@ -315,7 +315,7 @@ void saveEvs()
   if (!fp) {
     fprintf(stderr, "file %s open failed.\n", dat_path.string().c_str());
   }
-#if defined(USE_4TUPLE) || defined(NT4A)
+#if defined(USE_5TUPLE) || defined(USE_4TUPLE) || defined(NT4A)
   writeEvs(fp);
 #else
   NT6_notsym::writeEvs(fp);
@@ -340,7 +340,7 @@ int main(int argc, char* argv[])
     init_ev = atof(ev);
   }
 
-#if defined(USE_4TUPLE) || defined(NT4A)
+#if defined(USE_5TUPLE) || defined(USE_4TUPLE) || defined(NT4A)
   initEvs(init_ev);
 #else
   NT6_notsym::initEvs(init_ev);
@@ -426,7 +426,7 @@ int main(int argc, char* argv[])
       int selected = -1;
       for (int d = 0; d < 4; d++) {
 	if (play(d, state, &copy)) {
-#if defined(USE_4TUPLE) || defined(NT4A)
+#if defined(USE_5TUPLE) || defined(USE_4TUPLE) || defined(NT4A)
 	  double ev_r = 0.0;
 	  {
 	    CpuAccum acc(cpu_ns_eval_block);
@@ -454,7 +454,7 @@ int main(int argc, char* argv[])
       }
       play(selected, state, &state);
       if (turn > 1) {
-#if defined(USE_4TUPLE) || defined(NT4A)
+#if defined(USE_5TUPLE) || defined(USE_4TUPLE) || defined(NT4A)
           {
             CpuAccum acc(cpu_ns_update_block);
             double target = 0.0;
@@ -487,7 +487,7 @@ int main(int argc, char* argv[])
      
 
       if (gameOver(state)) {
-#if defined(USE_4TUPLE) || defined(NT4A)
+#if defined(USE_5TUPLE) || defined(USE_4TUPLE) || defined(NT4A)
           {
             CpuAccum acc(cpu_ns_update_block);
             double target = 0.0;

@@ -93,29 +93,25 @@ inline void writeEvs(FILE *fp)
   count = fwrite(evs, sizeof(double), NUM_STAGES * NUM_TUPLE * ARRAY_LENGTH, fp);
   if (count != NUM_STAGES * NUM_TUPLE * ARRAY_LENGTH)
   {
-    fprintf(stderr, "in writeEvs(): written %ld elements (should be %d)
-",
+    fprintf(stderr, "in writeEvs(): written %ld elements (should be %d)\n",
             count, NUM_STAGES * NUM_TUPLE * ARRAY_LENGTH);
   }
   count = fwrite(errs, sizeof(double), NUM_STAGES * NUM_TUPLE * ARRAY_LENGTH, fp);
   if (count != NUM_STAGES * NUM_TUPLE * ARRAY_LENGTH)
   {
-    fprintf(stderr, "in writeEvs(): written %ld elements (should be %d)
-",
+    fprintf(stderr, "in writeEvs(): written %ld elements (should be %d)\n",
             count, NUM_STAGES * NUM_TUPLE * ARRAY_LENGTH);
   }
   count = fwrite(aerrs, sizeof(double), NUM_STAGES * NUM_TUPLE * ARRAY_LENGTH, fp);
   if (count != NUM_STAGES * NUM_TUPLE * ARRAY_LENGTH)
   {
-    fprintf(stderr, "in writeEvs(): written %ld elements (should be %d)
-",
+    fprintf(stderr, "in writeEvs(): written %ld elements (should be %d)\n",
             count, NUM_STAGES * NUM_TUPLE * ARRAY_LENGTH);
   }
   count = fwrite(updatecounts, sizeof(int), NUM_STAGES * NUM_TUPLE * ARRAY_LENGTH, fp);
   if (count != NUM_STAGES * NUM_TUPLE * ARRAY_LENGTH)
   {
-    fprintf(stderr, "in writeEvs(): written %ld elements (should be %d)
-",
+    fprintf(stderr, "in writeEvs(): written %ld elements (should be %d)\n",
             count, NUM_STAGES * NUM_TUPLE * ARRAY_LENGTH);
   }
 }
@@ -126,29 +122,25 @@ inline void readEvs(FILE *fp)
   count = fread(evs, sizeof(double), NUM_STAGES * NUM_TUPLE * ARRAY_LENGTH, fp);
   if (count != NUM_STAGES * NUM_TUPLE * ARRAY_LENGTH)
   {
-    fprintf(stderr, "in readEvs(): read %ld elements (should be %d)
-",
+    fprintf(stderr, "in readEvs(): read %ld elements (should be %d)\n",
             count, NUM_STAGES * NUM_TUPLE * ARRAY_LENGTH);
   }
   count = fread(errs, sizeof(double), NUM_STAGES * NUM_TUPLE * ARRAY_LENGTH, fp);
   if (count != NUM_STAGES * NUM_TUPLE * ARRAY_LENGTH)
   {
-    fprintf(stderr, "in readEvs(): read %ld elements (should be %d)
-",
+    fprintf(stderr, "in readEvs(): read %ld elements (should be %d)\n",
             count, NUM_STAGES * NUM_TUPLE * ARRAY_LENGTH);
   }
   count = fread(aerrs, sizeof(double), NUM_STAGES * NUM_TUPLE * ARRAY_LENGTH, fp);
   if (count != NUM_STAGES * NUM_TUPLE * ARRAY_LENGTH)
   {
-    fprintf(stderr, "in readEvs(): read %ld elements (should be %d)
-",
+    fprintf(stderr, "in readEvs(): read %ld elements (should be %d)\n",
             count, NUM_STAGES * NUM_TUPLE * ARRAY_LENGTH);
   }
   count = fread(updatecounts, sizeof(int), NUM_STAGES * NUM_TUPLE * ARRAY_LENGTH, fp);
   if (count != NUM_STAGES * NUM_TUPLE * ARRAY_LENGTH)
   {
-    fprintf(stderr, "in readEvs(): read %ld elements (should be %d)
-",
+    fprintf(stderr, "in readEvs(): read %ld elements (should be %d)\n",
             count, NUM_STAGES * NUM_TUPLE * ARRAY_LENGTH);
   }
 }
