@@ -97,12 +97,14 @@ def plot_for_tuple(out_dir: Path, prefix: str, tuple_id: int, sym_list, buckets,
             m, sd = mean_sd(series[x])
             means.append(m)
             sds.append(sd)
-        plt.plot(xs, means, label=cond)
+        line, = plt.plot(xs, means, label=cond)
+        color = line.get_color()
         plt.fill_between(
             xs,
             [m - s for m, s in zip(means, sds)],
             [m + s for m, s in zip(means, sds)],
-            alpha=0.2,
+            color=color,
+            alpha=0.12,
         )
 
     plt.xlabel("traincount_total" if x_axis == "update" else "cpu_sec_total")
