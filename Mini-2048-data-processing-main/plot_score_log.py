@@ -37,8 +37,18 @@ def aggregate(series):
         for x, y in points:
             by_x[x].append(y)
         xs = sorted(by_x.keys())
-        ys = [sum(by_x[x]) / len(by_x[x]) for x in xs]
-        aggregated[key] = (xs, ys)
+        means = []
+        sds = []
+        for x in xs:
+            vals = by_x[x]
+            mean = sum(vals) / len(vals)
+            means.append(mean)
+            if len(vals) < 2:
+                sds.append(0.0)
+            else:
+                var = sum((v - mean) ** 2 for v in vals) / (len(vals) - 1)
+                sds.append(var ** 0.5)
+        aggregated[key] = (xs, means, sds)
     return aggregated
 
 
@@ -47,10 +57,20 @@ def plot(aggregated, out_path: Path, title_suffix: str | None = None):
         raise SystemExit("no log_score.csv found for run_name")
     plt.figure(figsize=(10, 6))
     for key in sorted(aggregated.keys()):
-        xs, ys = aggregated[key]
+        xs, ys, sds = aggregated[key]
         if not xs:
             continue
-        plt.plot(xs, ys, label=key)
+        line, = plt.plot(xs, ys, label=key)
+        color = line.get_color()
+        plt.fill_between(
+            xs,
+            [y - s for y, s in zip(ys, sds)],
+            [y + s for y, s in zip(ys, sds)],
+            alpha=0.12,
+            hatch="///",
+            edgecolor=color,
+            linewidth=0.0,
+        )
     plt.xlabel("traincount")
     plt.ylabel("average_score")
     title = "Score vs Traincount (mean across seeds)"
