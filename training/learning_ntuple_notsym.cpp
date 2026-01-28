@@ -10,6 +10,7 @@
 #include <random>
 #include <filesystem>
 #include <string>
+#include <vector>
 using namespace std;
 namespace fs = std::filesystem;
 
@@ -400,10 +401,12 @@ int main(int argc, char* argv[])
   // prev: printf("CSV log: tuple_learning_rate_log_notsym.csv\n\n");
 
   int traincount = 0;
+  const int SCORE_WINDOW = 10000;
+  std::vector<int> score_window(SCORE_WINDOW, 0);
+  int window_count = 0;
+  int window_idx = 0;
   long long score_sum = 0;
   long long score_sumsq = 0;
-  int score_min = INT_MAX;
-  int score_max = INT_MIN;
   int block_games = 0;
   int total_games = 0;
   for (int gid = 0; gid < MAX_GAMES; gid++) {
@@ -504,21 +507,43 @@ int main(int argc, char* argv[])
 	STDOUT_LOG("game %d finished with score %d\n", gid+1, state.score);
           // ゲーム終了時に特定タプルの学習状態を記録
           logTupleStats(gid+1, state.score, turn, lastboard);
-          score_sum += state.score;
-          score_sumsq += 1LL * state.score * state.score;
-          if (state.score < score_min) score_min = state.score;
-          if (state.score > score_max) score_max = state.score;
+          int score_val = state.score;
+          if (window_count < SCORE_WINDOW) {
+            score_window[window_idx] = score_val;
+            window_idx = (window_idx + 1) % SCORE_WINDOW;
+            window_count++;
+            score_sum += score_val;
+            score_sumsq += 1LL * score_val * score_val;
+          } else {
+            int old = score_window[window_idx];
+            score_window[window_idx] = score_val;
+            window_idx = (window_idx + 1) % SCORE_WINDOW;
+            score_sum += score_val - old;
+            score_sumsq += 1LL * score_val * score_val - 1LL * old * old;
+          }
           block_games++;
           total_games++;
         if (block_games == 10000 && score_log_fp) {
-          const double n = (double)block_games;
+          const double n = (double)window_count;
           const double mean = n > 0 ? (double)score_sum / n : 0.0;
           double var = 0.0;
-          if (block_games >= 2) {
+          if (window_count >= 2) {
             var = ((double)score_sumsq - (double)score_sum * (double)score_sum / n) / (n - 1.0);
             if (var < 0.0) var = 0.0;
           }
           const double sd = sqrt(var);
+
+          int score_min = INT_MAX;
+          int score_max = INT_MIN;
+          for (int i = 0; i < window_count; i++) {
+            int v = score_window[i];
+            if (v < score_min) score_min = v;
+            if (v > score_max) score_max = v;
+          }
+          if (window_count == 0) {
+            score_min = 0;
+            score_max = 0;
+          }
 
           const uint64_t block_cpu_end = now_cpu_ns_process();
           const double cpu_sec_total =
@@ -546,10 +571,6 @@ int main(int argc, char* argv[])
                   cpu_sec_total, cpu_sec_block, cpu_sec_eval, cpu_sec_update,
                   cpu_sec_other, share_update, wall_sec_total, wall_sec_block);
 
-          score_sum = 0;
-          score_sumsq = 0;
-          score_min = INT_MAX;
-          score_max = INT_MIN;
           block_games = 0;
           cpu_ns_eval_block = 0;
           cpu_ns_update_block = 0;
