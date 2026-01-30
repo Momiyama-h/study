@@ -595,6 +595,15 @@ if result:
             k_config = dict(k_config)
             k_config["label"] = k
         plt.plot(v.x, v.y, **k_config)
+
+    if args.graph in (
+        "surv",
+        "surv-symdiff",
+        "surv-mean",
+        "surv-mean-symdiff",
+    ):
+        plt.xlim(0, 800)
+        plt.ylim(0, 1)
     handles, labels = plt.gca().get_legend_handles_labels()
     sorted_pairs = sorted(zip(labels, handles), key=lambda x: x[0])
     labels, handles = zip(*sorted_pairs)
