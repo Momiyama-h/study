@@ -18,6 +18,7 @@ Options:
   --tuples LIST        comma-separated tuples (default: 4,6)
   --sym-list LIST      comma-separated sym list (default: sym,notsym)
   --parallel N         max parallel jobs (default: nproc)
+  --sample-size N      scatter sample size (<=0 means all points)
 USAGE
 }
 
@@ -32,6 +33,7 @@ STAGE=""
 TUPLES="4,6"
 SYM_LIST="sym,notsym"
 PARALLEL="$(nproc)"
+SAMPLE_SIZE=""
 SPLIT_SYM=1
 
 while [[ $# -gt 0 ]]; do
@@ -47,6 +49,7 @@ while [[ $# -gt 0 ]]; do
     --tuples) TUPLES="$2"; shift 2;;
     --sym-list) SYM_LIST="$2"; shift 2;;
     --parallel) PARALLEL="$2"; shift 2;;
+    --sample-size) SAMPLE_SIZE="$2"; shift 2;;
     -h|--help) usage; exit 0;;
     *) echo "Unknown option: $1"; usage; exit 1;;
   esac
@@ -110,6 +113,9 @@ PY
 )"
   local cmd=(uv run -m graph "$GRAPH" --recursive --intersection "$run_name_regex" \
     --output "$output_file" --output-dir "$out_dir")
+  if [ -n "$SAMPLE_SIZE" ]; then
+    cmd+=(--sample-size "$SAMPLE_SIZE")
+  fi
   cmd+=(--tuple "$tuple")
   if [ -n "$sym" ]; then
     cmd+=(--sym "$sym")
