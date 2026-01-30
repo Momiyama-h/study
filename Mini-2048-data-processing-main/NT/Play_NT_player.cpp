@@ -14,6 +14,8 @@ using namespace std;
 
 #include "4tuples_sym.h"
 #include "4tuples_nosym.h"
+#include "5tuples_sym.h"
+#include "5tuples_notsym.h"
 #include "6tuples_sym.h"
 #include "6tuples_notsym.h"
 #include "Game2048_3_3.h"
@@ -59,6 +61,22 @@ static double calcEv_stage0_nt4_sym(const int* board) {
   return ev;
 }
 
+static double calcEv_stage0_nt5_sym(const int* board) {
+  const int s = 0;
+  double ev = 0;
+  for (int i = 0; i < NT5::NUM_TUPLE; i++) {
+    for (int j = 0; j < 8; j++) {
+      int index = 0;
+      for (int k = 0; k < NT5::TUPLE_SIZE; k++) {
+        index = index * NT5::VARIATION_TILE +
+                board[NT5::sympos[j][NT5::pos[i][k]]];
+      }
+      ev += NT5::evs[s][i][index];
+    }
+  }
+  return ev;
+}
+
 static double calcEv_stage0_nt6_sym(const int* board) {
   const int s = 0;
   double ev = 0;
@@ -90,6 +108,20 @@ static double calcEv_stage0_nt4_notsym(const int* board) {
   return ev;
 }
 
+static double calcEv_stage0_nt5_notsym(const int* board) {
+  const int s = 0;
+  double ev = 0;
+  for (int i = 0; i < NT5_notsym::NUM_TUPLE; i++) {
+    int index = 0;
+    for (int k = 0; k < NT5_notsym::TUPLE_SIZE; k++) {
+      index = index * NT5_notsym::VARIATION_TILE +
+              board[NT5_notsym::sympos[0][NT5_notsym::pos[i][k]]];
+    }
+    ev += NT5_notsym::evs[s][i][index];
+  }
+  return ev;
+}
+
 static double calcEv_stage0_nt6_notsym(const int* board) {
   const int s = 0;
   double ev = 0;
@@ -105,7 +137,7 @@ static double calcEv_stage0_nt6_notsym(const int* board) {
 }
 int main(int argc, char** argv) {
   if (argc < 2 + 1) {
-    fprintf(stderr, "Usage: playgreedy <seed> <game_counts> <evfile> [sym|notsym] [4|6] [--run-name NAME] [--board-root PATH] [--single-stage|--nostage]\n");
+    fprintf(stderr, "Usage: playgreedy <seed> <game_counts> <evfile> [sym|notsym] [4|5|6] [--run-name NAME] [--board-root PATH] [--single-stage|--nostage]\n");
     exit(1);
   }
   int seed = atoi(argv[1]);
@@ -134,7 +166,7 @@ int main(int argc, char** argv) {
     if (opt == "sym" || opt == "notsym") {
       symmetry = opt;
       symmetry_set = true;
-    } else if (opt == "4" || opt == "6") {
+    } else if (opt == "4" || opt == "5" || opt == "6") {
       number = opt;
       number_set = true;
     } else if (opt == "--run-name") {
@@ -171,10 +203,10 @@ int main(int argc, char** argv) {
     }
   }
   if (!number_set) {
-    if (!basename.empty() && (basename[0] == '4' || basename[0] == '6')) {
+    if (!basename.empty() && (basename[0] == '4' || basename[0] == '5' || basename[0] == '6')) {
       number = string(1, basename[0]);
     } else {
-      fprintf(stderr, "Error: evfile must start with '4' or '6': %s\n", basename.c_str());
+      fprintf(stderr, "Error: evfile must start with '4', '5' or '6': %s\n", basename.c_str());
       exit(1);
     }
   }
@@ -207,6 +239,12 @@ int main(int argc, char** argv) {
       NT4::readEvs(fp);
     } else {
       NT4_notsym::readEvs(fp);
+    }
+  } else if (number == "5") {
+    if (symmetry == "sym") {
+      NT5::readEvs(fp);
+    } else {
+      NT5_notsym::readEvs(fp);
     }
   } else {
     if (symmetry == "sym") {
@@ -246,6 +284,14 @@ int main(int argc, char** argv) {
             } else {
               evals[d] = single_stage ? calcEv_stage0_nt4_notsym(copy.board)
                                       : NT4_notsym::calcEv(copy.board);
+            }
+          } else if (number == "5") {
+            if (symmetry == "sym") {
+              evals[d] = single_stage ? calcEv_stage0_nt5_sym(copy.board)
+                                      : NT5::calcEv(copy.board);
+            } else {
+              evals[d] = single_stage ? calcEv_stage0_nt5_notsym(copy.board)
+                                      : NT5_notsym::calcEv(copy.board);
             }
           } else {
             if (symmetry == "sym") {

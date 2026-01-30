@@ -180,8 +180,9 @@ def moving_average(data, window_size)
 ### --recursive
 
 `board_data` 配下を再帰的に探索してデータを拾う。
-PP評価ファイルは `board_data/PP/eval-after-state-<safe_name>.txt` だけでなく、
-`board_data/<run_name>/seed<seed>/NT*_*` 直下の `eval-after-state.txt` も参照できる。
+PP評価ファイルは以下を参照できる:
+- `board_data/PP/game_counts<game_count>/seed<seed>/eval-after-state-<safe_name>.txt`
+- `board_data/<run_name>/seed<seed>/NT*_*` 直下の `eval-after-state.txt`
 
 ### --seed / --stage / --tuple / --sym
 

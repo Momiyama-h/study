@@ -16,8 +16,7 @@ RUN_NAME_SUFFIX=""
 INIT_EV="${INIT_EV:-}"
 
 SEEDS=(5 6 7 8 9 10 11 12 13 14)
-SEED_SPEC="seed5-14"
-RUN_NAME_BASE="trainonly_nt4a_${SEED_SPEC}_${RUN_TS}"
+RUN_NAME_BASE="trainonly_nt4a_${RUN_TS}"
 
 usage() {
   cat <<'USAGE'
@@ -25,7 +24,7 @@ Usage:
   run_train_nt4a_trainonly.sh [options]
 
 Options:
-  --run-name-base NAME   run_name base (default: trainonly_nt4a_seed5-14_<ts>)
+  --run-name-base NAME   run_name base (default: trainonly_nt4a_<ts>)
   --run-name-suffix STR  suffix to avoid collisions (default: none)
   --allow-collide        allow overwriting existing NT4_sym/NT4_notsym under same run_name
   --seed N               run only a single seed
@@ -49,10 +48,10 @@ while [[ $# -gt 0 ]]; do
     --run-name-base) RUN_NAME_BASE="$2"; shift 2;;
     --run-name-suffix) RUN_NAME_SUFFIX="$2"; shift 2;;
     --allow-collide) ALLOW_COLLIDE=1; shift;;
-    --seed) SEEDS=("$2"); SEED_SPEC="seed$2"; shift 2;;
+    --seed) SEEDS=("$2"); shift 2;;
     --seed-start) SEED_START="$2"; shift 2;;
     --seed-end) SEED_END="$2"; shift 2;;
-    --seeds) read -r -a SEEDS <<< "$2"; SEED_SPEC="seed${SEEDS[0]}-${SEEDS[-1]}"; shift 2;;
+    --seeds) read -r -a SEEDS <<< "$2"; shift 2;;
     --stage-only) STAGE_MODES=(stage); shift;;
     --nostage) STAGE_MODES=(stage nostage); shift;;
     --parallel) PARALLEL="$2"; shift 2;;
@@ -70,10 +69,8 @@ if [[ -n "${SEED_START:-}" || -n "${SEED_END:-}" ]]; then
   fi
   SEEDS=()
   for ((s=SEED_START; s<=SEED_END; s++)); do SEEDS+=("$s"); done
-  SEED_SPEC="seed${SEED_START}-${SEED_END}"
 fi
 
-RUN_NAME_BASE="${RUN_NAME_BASE/${SEED_SPEC}/${SEED_SPEC}}"
 if [[ -n "$RUN_NAME_SUFFIX" ]]; then
   RUN_NAME_BASE+="$RUN_NAME_SUFFIX"
 fi

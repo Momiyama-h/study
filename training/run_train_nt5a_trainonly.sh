@@ -14,10 +14,11 @@ STAGE_MODES=(stage)
 ALLOW_COLLIDE=0
 RUN_NAME_SUFFIX=""
 INIT_EV="${INIT_EV:-}"
+PURGE_LEGACY=0
+PURGE_MODE="backup"
 
 SEEDS=(5 6 7 8 9 10 11 12 13 14)
-SEED_SPEC="seed5-14"
-RUN_NAME_BASE_DEFAULT="trainonly_nt5a_${SEED_SPEC}_${RUN_TS}"
+RUN_NAME_BASE_DEFAULT="trainonly_nt5a_${RUN_TS}"
 RUN_NAME_BASE="${RUN_NAME_BASE:-$RUN_NAME_BASE_DEFAULT}"
 
 usage() {
@@ -26,7 +27,7 @@ Usage:
   run_train_nt5a_trainonly.sh [options]
 
 Options:
-  --run-name-base NAME   run_name base (default: trainonly_nt5a_seed5-14_<ts>)
+  --run-name-base NAME   run_name base (default: trainonly_nt5a_<ts>)
   --run-name-suffix STR  suffix to avoid collisions (default: none)
   --allow-collide        allow overwriting existing NT5_sym/NT5_notsym under same run_name
   --seed N               run only a single seed
@@ -38,6 +39,8 @@ Options:
   --parallel N           max parallel jobs (default: 8)
   --stdout-log 0|1       enable stdout log in training (default: 0)
   --init-ev N            optimistic init value (INIT_EV) for learning
+  --purge-legacy-4tuple  move existing 4tuple_* under NT5_* to _backup_old4tuple (default: off)
+  --purge-legacy-4tuple-delete  delete existing 4tuple_* under NT5_* (dangerous)
   -h, --help             show help
 
 Env (optional):
@@ -50,15 +53,17 @@ while [[ $# -gt 0 ]]; do
     --run-name-base) RUN_NAME_BASE="$2"; shift 2;;
     --run-name-suffix) RUN_NAME_SUFFIX="$2"; shift 2;;
     --allow-collide) ALLOW_COLLIDE=1; shift;;
-    --seed) SEEDS=("$2"); SEED_SPEC="seed$2"; shift 2;;
+    --seed) SEEDS=("$2"); shift 2;;
     --seed-start) SEED_START="$2"; shift 2;;
     --seed-end) SEED_END="$2"; shift 2;;
-    --seeds) read -r -a SEEDS <<< "$2"; SEED_SPEC="seed${SEEDS[0]}-${SEEDS[-1]}"; shift 2;;
+    --seeds) read -r -a SEEDS <<< "$2"; shift 2;;
     --stage-only) STAGE_MODES=(stage); shift;;
     --nostage) STAGE_MODES=(stage nostage); shift;;
     --parallel) PARALLEL="$2"; shift 2;;
     --stdout-log) STDOUT_LOG="$2"; shift 2;;
     --init-ev) INIT_EV="$2"; shift 2;;
+    --purge-legacy-4tuple) PURGE_LEGACY=1; PURGE_MODE="backup"; shift;;
+    --purge-legacy-4tuple-delete) PURGE_LEGACY=1; PURGE_MODE="delete"; shift;;
     -h|--help) usage; exit 0;;
     *) echo "Unknown option: $1" >&2; usage; exit 1;;
   esac
@@ -71,10 +76,8 @@ if [[ -n "${SEED_START:-}" || -n "${SEED_END:-}" ]]; then
   fi
   SEEDS=()
   for ((s=SEED_START; s<=SEED_END; s++)); do SEEDS+=("$s"); done
-  SEED_SPEC="seed${SEED_START}-${SEED_END}"
 fi
 
-RUN_NAME_BASE="${RUN_NAME_BASE/${SEED_SPEC}/${SEED_SPEC}}"
 if [[ -n "$RUN_NAME_SUFFIX" ]]; then
   RUN_NAME_BASE+="$RUN_NAME_SUFFIX"
 fi
@@ -114,6 +117,26 @@ check_collide() {
   return 1
 }
 
+purge_legacy_4tuple() {
+  local run_name="$1"
+  local backup_dir="${NTUPLE_DAT_ROOT}/${run_name}/_backup_old4tuple"
+  if [[ "$PURGE_MODE" == "backup" ]]; then
+    mkdir -p "$backup_dir"
+  fi
+  for seed in "${SEEDS[@]}"; do
+    for symmetry in sym notsym; do
+      local d="${NTUPLE_DAT_ROOT}/${run_name}/seed${seed}/NT5_${symmetry}"
+      if [[ -d "$d" ]]; then
+        if [[ "$PURGE_MODE" == "delete" ]]; then
+          find "$d" -type f -name "4tuple_*" -print0 | xargs -0 -r rm -f
+        else
+          find "$d" -type f -name "4tuple_*" -exec mv -n {} "$backup_dir"/ \;
+        fi
+      fi
+    done
+  done
+}
+
 for stage_mode in "${STAGE_MODES[@]}"; do
   case "$stage_mode" in
     stage)
@@ -141,6 +164,9 @@ for stage_mode in "${STAGE_MODES[@]}"; do
         run_name="${RUN_NAME_BASE}__${stage_tag}"
       fi
     fi
+  fi
+  if [[ "$PURGE_LEGACY" -eq 1 ]]; then
+    purge_legacy_4tuple "$run_name"
   fi
 
   compile_train "$BASE_MINI/learning_ntuple_sym_nt5a.cpp" "$BASE_MINI/learn_5sym${bin_suffix}" "-DUSE_5TUPLE $train_flags"

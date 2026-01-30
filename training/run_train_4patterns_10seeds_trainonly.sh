@@ -8,24 +8,66 @@ LOG_ROOT="${LOG_ROOT:-/HDD/momiyama2/data/study/training_logs}"
 NTUPLE_DAT_ROOT="${NTUPLE_DAT_ROOT:-/HDD/momiyama2/data/study/ntuple_dat}"
 
 SEEDS=(${SEEDS:-"5 6 7 8 9 10 11 12 13 14"})
-SEED_SPEC="${SEED_SPEC:-seed5-14}"
 RUN_TS="${RUN_TS:-$(date +%Y%m%d_%H%M)}"
 PARALLEL="${PARALLEL:-8}"
 STDOUT_LOG="${STDOUT_LOG:-0}"
-RUN_NAME_BASE="${RUN_NAME_BASE:-trainonly_${SEED_SPEC}_${RUN_TS}}"
+RUN_NAME_BASE="${RUN_NAME_BASE:-trainonly_${RUN_TS}}"
+STAGE_MODE="${STAGE_MODE:-}"
 STAGE_MODES_STR="${STAGE_MODES:-nostage stage}"
-STAGE_MODES_STR="${STAGE_MODES_STR//,/ }"
-read -r -a STAGE_MODES <<< "$STAGE_MODES_STR"
+NTUPLES_STR="${NTUPLES:-4 6}"
 PARALLEL_BY_SEED=0
 
-if [[ "${1:-}" == "--sequential" ]]; then
-  PARALLEL=1
-  shift
+usage() {
+  cat <<'USAGE'
+Usage:
+  run_train_4patterns_10seeds_trainonly.sh [options]
+
+Options:
+  --sequential            run sequentially (PARALLEL=1)
+  --parallel-by-seed      run 4 patterns per seed as a bundle
+  --stage-only            run stage only
+  --nostage               run nostage only
+  --stage-mode MODE       stage|nostage|both (overrides STAGE_MODES/STAGE_MODE)
+  --stage-modes LIST      comma/space list (e.g. "stage,nostage")
+  --tuples LIST           comma/space list (default: "4 6")
+  -h, --help              show help
+
+Env (optional):
+  SEEDS, RUN_TS, PARALLEL, STDOUT_LOG, RUN_NAME_BASE,
+  STAGE_MODE, STAGE_MODES, NTUPLES, BASE_MINI, LOG_ROOT, NTUPLE_DAT_ROOT
+USAGE
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --sequential) PARALLEL=1; shift;;
+    --parallel-by-seed) PARALLEL_BY_SEED=1; shift;;
+    --stage-only) STAGE_MODE="stage"; shift;;
+    --nostage) STAGE_MODE="nostage"; shift;;
+    --stage-mode) STAGE_MODE="$2"; shift 2;;
+    --stage-modes) STAGE_MODES_STR="$2"; shift 2;;
+    --tuples) NTUPLES_STR="$2"; shift 2;;
+    -h|--help) usage; exit 0;;
+    *) echo "Unknown option: $1" >&2; usage; exit 1;;
+  esac
+done
+
+if [[ -n "$STAGE_MODE" ]]; then
+  case "$STAGE_MODE" in
+    stage) STAGE_MODES_STR="stage" ;;
+    nostage) STAGE_MODES_STR="nostage" ;;
+    both|all) STAGE_MODES_STR="nostage stage" ;;
+    *)
+      echo "ERROR: invalid STAGE_MODE: $STAGE_MODE (use stage|nostage|both)" >&2
+      exit 1
+      ;;
+  esac
 fi
-if [[ "${1:-}" == "--parallel-by-seed" ]]; then
-  PARALLEL_BY_SEED=1
-  shift
-fi
+
+STAGE_MODES_STR="${STAGE_MODES_STR//,/ }"
+read -r -a STAGE_MODES <<< "$STAGE_MODES_STR"
+NTUPLES_STR="${NTUPLES_STR//,/ }"
+read -r -a NTUPLES <<< "$NTUPLES_STR"
 
 compile_train() {
   local src="$1"
@@ -67,10 +109,10 @@ run_seed_bundle() {
   local stage_tag="$2"
   local run_name="$3"
   local bin_suffix="$4"
-  run_one 4 sym "$BASE_MINI/learn_4sym${bin_suffix}" "$seed" "$stage_tag" "$run_name"
-  run_one 4 notsym "$BASE_MINI/learn_4notsym${bin_suffix}" "$seed" "$stage_tag" "$run_name"
-  run_one 6 sym "$BASE_MINI/learn_6sym${bin_suffix}" "$seed" "$stage_tag" "$run_name"
-  run_one 6 notsym "$BASE_MINI/learn_6notsym${bin_suffix}" "$seed" "$stage_tag" "$run_name"
+  for tuple in "${NTUPLES[@]}"; do
+    run_one "$tuple" sym "$BASE_MINI/learn_${tuple}sym${bin_suffix}" "$seed" "$stage_tag" "$run_name"
+    run_one "$tuple" notsym "$BASE_MINI/learn_${tuple}notsym${bin_suffix}" "$seed" "$stage_tag" "$run_name"
+  done
 }
 
 for stage_mode in "${STAGE_MODES[@]}"; do
@@ -93,10 +135,22 @@ for stage_mode in "${STAGE_MODES[@]}"; do
 
   run_name="${RUN_NAME_BASE}__${stage_tag}"
 
-  compile_train "$BASE_MINI/learning_ntuple_sym.cpp" "$BASE_MINI/learn_6sym${bin_suffix}" "$train_flags"
-  compile_train "$BASE_MINI/learning_ntuple_notsym.cpp" "$BASE_MINI/learn_6notsym${bin_suffix}" "$train_flags"
-  compile_train "$BASE_MINI/learning_ntuple_sym.cpp" "$BASE_MINI/learn_4sym${bin_suffix}" "-DUSE_4TUPLE $train_flags"
-  compile_train "$BASE_MINI/learning_ntuple_notsym.cpp" "$BASE_MINI/learn_4notsym${bin_suffix}" "-DUSE_4TUPLE $train_flags"
+  for tuple in "${NTUPLES[@]}"; do
+    case "$tuple" in
+      4)
+        compile_train "$BASE_MINI/learning_ntuple_sym.cpp" "$BASE_MINI/learn_4sym${bin_suffix}" "-DUSE_4TUPLE $train_flags"
+        compile_train "$BASE_MINI/learning_ntuple_notsym.cpp" "$BASE_MINI/learn_4notsym${bin_suffix}" "-DUSE_4TUPLE $train_flags"
+        ;;
+      6)
+        compile_train "$BASE_MINI/learning_ntuple_sym.cpp" "$BASE_MINI/learn_6sym${bin_suffix}" "$train_flags"
+        compile_train "$BASE_MINI/learning_ntuple_notsym.cpp" "$BASE_MINI/learn_6notsym${bin_suffix}" "$train_flags"
+        ;;
+      *)
+        echo "ERROR: unsupported tuple size: $tuple (use 4 or 6)" >&2
+        exit 1
+        ;;
+    esac
+  done
 
   JOBS=0
   if [[ "$PARALLEL_BY_SEED" -eq 1 ]]; then
@@ -110,10 +164,10 @@ for stage_mode in "${STAGE_MODES[@]}"; do
     done
   else
     for seed in "${SEEDS[@]}"; do
-      spawn_job 4 sym "$BASE_MINI/learn_4sym${bin_suffix}" "$seed" "$stage_tag" "$run_name"
-      spawn_job 4 notsym "$BASE_MINI/learn_4notsym${bin_suffix}" "$seed" "$stage_tag" "$run_name"
-      spawn_job 6 sym "$BASE_MINI/learn_6sym${bin_suffix}" "$seed" "$stage_tag" "$run_name"
-      spawn_job 6 notsym "$BASE_MINI/learn_6notsym${bin_suffix}" "$seed" "$stage_tag" "$run_name"
+      for tuple in "${NTUPLES[@]}"; do
+        spawn_job "$tuple" sym "$BASE_MINI/learn_${tuple}sym${bin_suffix}" "$seed" "$stage_tag" "$run_name"
+        spawn_job "$tuple" notsym "$BASE_MINI/learn_${tuple}notsym${bin_suffix}" "$seed" "$stage_tag" "$run_name"
+      done
     done
   fi
   wait

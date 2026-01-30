@@ -11,9 +11,8 @@ OUTPUT_ROOT="${OUTPUT_ROOT:-/HDD/momiyama2/data/study/analysis_outputs/training_
 SEEDS=(${SEEDS:-"15 16 17 18 19 20 21 22 23 24"})
 TUPLES=(4 6)
 STAGE_TAGS=(stage nostage)
-SEED_SPEC="${SEED_SPEC:-seed15-24}"
 GAME_COUNT="${GAME_COUNT:-100}"
-RUN_NAME_BASE="${RUN_NAME_BASE:-stage_compare_${SEED_SPEC}_g${GAME_COUNT}_${RUN_TS}}"
+RUN_NAME_BASE="${RUN_NAME_BASE:-stage_compare_g${GAME_COUNT}_${RUN_TS}}"
 
 if [ -z "$RUN_TS" ]; then
   echo "ERROR: RUN_TS is required (e.g. RUN_TS=20250201_1200)." >&2

@@ -239,7 +239,9 @@ void logTupleStats(int game_id, int score, int total_turns, const int* board)
 void saveEvs()
 {
   char filename[1024];
-#if defined(USE_4TUPLE) || defined(NT4A)
+#if defined(USE_5TUPLE)
+  sprintf(filename, "5tuple_sym_data_%d_%d.dat", global_seed, storage_c++);
+#elif defined(USE_4TUPLE) || defined(NT4A)
   sprintf(filename, "4tuple_sym_data_%d_%d.dat", global_seed, storage_c++);
 #else
   sprintf(filename, "6tuple_sym_data_%d_%d.dat", global_seed, storage_c++);

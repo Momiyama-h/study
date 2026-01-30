@@ -221,16 +221,9 @@ void logTupleStats(int game_id, int score, int total_turns, const int* board)
 
   // 盤面インデックス計算（固定盤面を使用）
   int index = 0;
-#if defined(USE_5TUPLE) || defined(USE_4TUPLE) || defined(NT4A)
   for (int k = 0; k < TUPLE_SIZE; k++) {
     index = index * VARIATION_TILE + FIXED_BOARD[pos[TRACKED_TUPLE_ID[0]][k]];
   }
-#else
-  for (int k = 0; k < NT6_notsym::TUPLE_SIZE; k++) {
-    index = index * NT6_notsym::VARIATION_TILE +
-            FIXED_BOARD[NT6_notsym::pos[TRACKED_TUPLE_ID[0]][k]];
-  }
-#endif
 
   // 各タプルの値を収集
   double aerr_vals[NUM_TRACKED];
@@ -243,22 +236,12 @@ void logTupleStats(int game_id, int score, int total_turns, const int* board)
   for (int i = 0; i < NUM_TRACKED; i++) {
     const int tuple_id = TRACKED_TUPLE_ID[i];
     int tindex = 0;
-#if defined(USE_5TUPLE) || defined(USE_4TUPLE) || defined(NT4A)
     for (int k = 0; k < TUPLE_SIZE; k++) {
       tindex = tindex * VARIATION_TILE + FIXED_BOARD[pos[tuple_id][k]];
     }
     aerr_vals[i] = aerrs[s][tuple_id][tindex];
     err_vals[i] = errs[s][tuple_id][tindex];
     uc_vals[i] = updatecounts[s][tuple_id][tindex];
-#else
-    for (int k = 0; k < NT6_notsym::TUPLE_SIZE; k++) {
-      tindex = tindex * NT6_notsym::VARIATION_TILE +
-               FIXED_BOARD[NT6_notsym::pos[tuple_id][k]];
-    }
-    aerr_vals[i] = NT6_notsym::aerrs[s][tuple_id][tindex];
-    err_vals[i] = NT6_notsym::errs[s][tuple_id][tindex];
-    uc_vals[i] = NT6_notsym::updatecounts[s][tuple_id][tindex];
-#endif
     ratio_vals[i] = (aerr_vals[i] != 0) ? err_vals[i] / aerr_vals[i] : 0.0;
     
     aerr_sum += aerr_vals[i];
@@ -305,7 +288,9 @@ void logTupleStats(int game_id, int score, int total_turns, const int* board)
 void saveEvs()
 {
   char filename[1024];
-#if defined(USE_5TUPLE) || defined(USE_4TUPLE) || defined(NT4A)
+#if defined(USE_5TUPLE)
+  sprintf(filename, "5tuple_notsym_data_%d_%d.dat", global_seed, storage_c++);
+#elif defined(USE_4TUPLE) || defined(NT4A)
   sprintf(filename, "4tuple_notsym_data_%d_%d.dat", global_seed, storage_c++);
 #else
   sprintf(filename, "6tuple_notsym_data_%d_%d.dat", global_seed, storage_c++);
@@ -315,11 +300,7 @@ void saveEvs()
   if (!fp) {
     fprintf(stderr, "file %s open failed.\n", dat_path.string().c_str());
   }
-#if defined(USE_5TUPLE) || defined(USE_4TUPLE) || defined(NT4A)
   writeEvs(fp);
-#else
-  NT6_notsym::writeEvs(fp);
-#endif
   fclose(fp);
   STDOUT_LOG("stored %s\n", dat_path.string().c_str());
   if (storage_c == STORAGE_COUNT) exit(0);
@@ -340,23 +321,13 @@ int main(int argc, char* argv[])
     init_ev = atof(ev);
   }
 
-#if defined(USE_5TUPLE) || defined(USE_4TUPLE) || defined(NT4A)
   initEvs(init_ev);
-#else
-  NT6_notsym::initEvs(init_ev);
-#endif
 
   const char* base = getenv("NTUPLE_DAT_ROOT");
   if (!base || !*base) {
     base = "/HDD/momiyama2/data/study/ntuple_dat";
   }
-#if defined(USE_5TUPLE)
   const char* tuple_dir = "NT5_notsym";
-#elif defined(USE_4TUPLE) || defined(NT4A)
-  const char* tuple_dir = "NT4_notsym";
-#else
-  const char* tuple_dir = "NT6_notsym";
-#endif
   output_dir =
       fs::path(base) / run_name / ("seed" + to_string(global_seed)) / tuple_dir;
   fs::create_directories(output_dir);
@@ -381,7 +352,6 @@ int main(int argc, char* argv[])
 
   // タプル情報の出力
   STDOUT_LOG("=== Loaded Tuples Information ===\n");
-#if defined(USE_4TUPLE) || defined(NT4A) || defined(USE_5TUPLE)
   STDOUT_LOG("Number of tuples: %d\n", NUM_TUPLE);
   STDOUT_LOG("Tuple size: %d\n", TUPLE_SIZE);
   STDOUT_LOG("Number of stages: %d\n", NUM_STAGES);
@@ -390,16 +360,6 @@ int main(int argc, char* argv[])
     for (int j = 0; j < TUPLE_SIZE; j++) {
       STDOUT_LOG("%d", pos[i][j]);
       if (j < TUPLE_SIZE - 1) STDOUT_LOG(", ");
-#else
-  STDOUT_LOG("Number of tuples: %d\n", NT6_notsym::NUM_TUPLE);
-  STDOUT_LOG("Tuple size: %d\n", NT6_notsym::TUPLE_SIZE);
-  STDOUT_LOG("Number of stages: %d\n", NT6_notsym::NUM_STAGES);
-  for (int i = 0; i < NT6_notsym::NUM_TUPLE; i++) {
-    STDOUT_LOG("Tuple %d: [", i);
-    for (int j = 0; j < NT6_notsym::TUPLE_SIZE; j++) {
-      STDOUT_LOG("%d", NT6_notsym::pos[i][j]);
-      if (j < NT6_notsym::TUPLE_SIZE - 1) STDOUT_LOG(", ");
-#endif
     }
     STDOUT_LOG("]\n");
   }
@@ -426,19 +386,11 @@ int main(int argc, char* argv[])
       int selected = -1;
       for (int d = 0; d < 4; d++) {
 	if (play(d, state, &copy)) {
-#if defined(USE_5TUPLE) || defined(USE_4TUPLE) || defined(NT4A)
 	  double ev_r = 0.0;
 	  {
 	    CpuAccum acc(cpu_ns_eval_block);
 	    ev_r = calcEv(copy.board) + (copy.score - state.score);
 	  }
-#else
-	  double ev_r = 0.0;
-	  {
-	    CpuAccum acc(cpu_ns_eval_block);
-	    ev_r = NT6_notsym::calcEv(copy.board) + (copy.score - state.score);
-	  }
-#endif
 	  if (ev_r > max_ev_r) {
 	    max_ev_r = ev_r;
 	    selected = d;
@@ -454,7 +406,6 @@ int main(int argc, char* argv[])
       }
       play(selected, state, &state);
       if (turn > 1) {
-#if defined(USE_5TUPLE) || defined(USE_4TUPLE) || defined(NT4A)
           {
             CpuAccum acc(cpu_ns_update_block);
             double target = 0.0;
@@ -464,17 +415,6 @@ int main(int argc, char* argv[])
             }
             update(lastboard, target);
           }
-#else
-          {
-            CpuAccum acc(cpu_ns_update_block);
-            double target = 0.0;
-            {
-              CpuAccum acc_eval(cpu_ns_eval_block);
-              target = max_ev_r - NT6_notsym::calcEv(lastboard);
-            }
-            NT6_notsym::update(lastboard, target);
-          }
-#endif
 	traincount++;
 	if (traincount % STORAGE_FREQUENCY == 0) saveEvs();
       }
@@ -487,7 +427,6 @@ int main(int argc, char* argv[])
      
 
       if (gameOver(state)) {
-#if defined(USE_5TUPLE) || defined(USE_4TUPLE) || defined(NT4A)
           {
             CpuAccum acc(cpu_ns_update_block);
             double target = 0.0;
@@ -497,17 +436,6 @@ int main(int argc, char* argv[])
             }
             update(lastboard, target);
           }
-#else
-          {
-            CpuAccum acc(cpu_ns_update_block);
-            double target = 0.0;
-            {
-              CpuAccum acc_eval(cpu_ns_eval_block);
-              target = 0 - NT6_notsym::calcEv(lastboard);
-            }
-            NT6_notsym::update(lastboard, target);
-          }
-#endif
 	traincount++;
 	if (traincount % STORAGE_FREQUENCY == 0) saveEvs();
 	STDOUT_LOG("game %d finished with score %d\n", gid+1, state.score);

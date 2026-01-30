@@ -45,8 +45,9 @@ int main(int argc, char** argv) {
   int seed = atoi(argv[1]);
   int game_count = atoi(argv[2]);
   fs::create_directory("../board_data");
-  string dir = "../board_data/PP/";
-  fs::create_directory(dir);
+  string dir = "../board_data/PP/game_counts" + to_string(game_count) + "/seed" +
+               to_string(seed) + "/";
+  fs::create_directories(dir);
   readDB2();
   srand(seed);
   list<array<int, 9>> state_list;

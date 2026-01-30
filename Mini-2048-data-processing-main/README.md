@@ -31,6 +31,7 @@ perfect_player はメモリ不足が懸念されるので、サーバで動か�
 補足:
 - `--sync` を付けると `uv sync` を実行します
 - `perfect_player/db2.out` が必要です
+- PP 出力は board_data/PP/game_counts<game_count>/seed<seed>/eval-*-<safe_name>.txt に保存されます（per-nt は各NTディレクトリ直下）
 
 ## TODO
 
@@ -47,8 +48,8 @@ perfect_player はメモリ不足が懸念されるので、サーバで動か�
   - [x] `__main__.py`を完成させる。
   - [x] 各コードでプロットできるようにする。
 
-- [x] 他の player の state を Perfect Player に食わせて、eval を出力するコードを記述する。(PP/eval*state*[player].txt)
-- [x] 他の player の afterstate を Perfect Player に食わせて、eval を出力するコードを記述する。 (PP/eval*saftertate*[player].txt)
+- [x] 他の player の state を Perfect Player に食わせて、eval を出力するコードを記述する。 (PP/game_counts*/seed*/eval-state-*.txt)
+- [x] 他の player の afterstate を Perfect Player に食わせて、eval を出力するコードを記述する。 (PP/game_counts*/seed*/eval-after-state-*.txt)
 - [x] PP の surv を出そうとすると面倒
 - [ ] surv diff を出せるようにしたい
 - [ ] ディレクトリの中のデータを参照したいけど要検討

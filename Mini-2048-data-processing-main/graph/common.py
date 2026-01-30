@@ -39,11 +39,42 @@ class PlayerData:
             raise FileNotFoundError(f"{eval_file}が存在しません。")
         return eval_file
 
+    def _seed_from_path(self):
+        for part in self.rel_path.parts:
+            if part.startswith("seed"):
+                try:
+                    return int(part[4:])
+                except ValueError:
+                    return None
+        return None
+
+    def _game_count_from_meta(self):
+        meta = self.meta or {}
+        for key in ("game_count", "game_counts", "gamecount", "games"):
+            if key in meta:
+                return meta[key]
+        return None
+
+    def _pp_eval_path(self, prefix: str):
+        game_count = self._game_count_from_meta()
+        seed = self._seed_from_path()
+        if game_count is None or seed is None:
+            return None
+        return (
+            self.pp_dir
+            / f"game_counts{game_count}"
+            / f"seed{seed}"
+            / f"{prefix}-{self.name}.txt"
+        )
+
     @property
     def pp_eval_state(self):
         local = self.target_dir / "eval-state.txt"
         if local.exists():
             return local
+        pp_structured = self._pp_eval_path("eval-state")
+        if pp_structured is not None and pp_structured.exists():
+            return pp_structured
         pp: Path = self.pp_dir / f"eval-state-{self.name}.txt"
         if not pp.exists():
             raise FileNotFoundError(f"{pp}が存在しません。")
@@ -54,10 +85,28 @@ class PlayerData:
         local = self.target_dir / "eval-after-state.txt"
         if local.exists():
             return local
+        pp_structured = self._pp_eval_path("eval-after-state")
+        if pp_structured is not None and pp_structured.exists():
+            return pp_structured
         pp: Path = self.pp_dir / f"eval-after-state-{self.name}.txt"
         if not pp.exists():
             raise FileNotFoundError(f"{pp}が存在しません。")
         return pp
+
+    @property
+    def pp_state_file(self):
+        game_count = self._game_count_from_meta()
+        seed = self._seed_from_path()
+        if game_count is not None and seed is not None:
+            structured = (
+                self.pp_dir / f"game_counts{game_count}" / f"seed{seed}" / "state.txt"
+            )
+            if structured.exists():
+                return structured
+        legacy = self.pp_dir / "state.txt"
+        if legacy.exists():
+            return legacy
+        raise FileNotFoundError(f"{legacy}が存在しません。")
 
     @property
     def meta(self):

@@ -14,6 +14,7 @@ namespace fs = std::filesystem;
 using namespace std;
 
 #include "4tuples_nosym.h"
+#include "5tuples_notsym.h"
 #include "6tuples_notsym.h"
 #include "Game2048_3_3.h"
 #include "fread.h"
@@ -43,7 +44,7 @@ int progress_calculation(int board[9]) {
 }
 int main(int argc, char** argv) {
   if (argc < 2 + 1) {
-    fprintf(stderr, "Usage: playgreedy <seed> <game_counts> <evfile> [4|6]\n");
+    fprintf(stderr, "Usage: playgreedy <seed> <game_counts> <evfile> [4|5|6]\n");
     exit(1);
   }
   int seed = atoi(argv[1]);
@@ -56,7 +57,7 @@ int main(int argc, char** argv) {
   bool number_set = false;
   for (int i = 4; i < argc; i++) {
     string opt = argv[i];
-    if (opt == "4" || opt == "6") {
+    if (opt == "4" || opt == "5" || opt == "6") {
       number = opt;
       number_set = true;
     } else if (opt == "notsym") {
@@ -70,10 +71,10 @@ int main(int argc, char** argv) {
     }
   }
   if (!number_set) {
-    if (!basename.empty() && (basename[0] == '4' || basename[0] == '6')) {
+    if (!basename.empty() && (basename[0] == '4' || basename[0] == '5' || basename[0] == '6')) {
       number = string(1, basename[0]);
     } else {
-      fprintf(stderr, "Error: evfile must start with '4' or '6': %s\n", basename.c_str());
+      fprintf(stderr, "Error: evfile must start with '4', '5' or '6': %s\n", basename.c_str());
       exit(1);
     }
   }
@@ -100,6 +101,8 @@ int main(int argc, char** argv) {
   }
   if (number == "4") {
     NT4_notsym::readEvs(fp);
+  } else if (number == "5") {
+    NT5_notsym::readEvs(fp);
   } else {
     NT6_notsym::readEvs(fp);
   }
@@ -128,6 +131,8 @@ int main(int argc, char** argv) {
         if (play(d, state, &copy)) {
           if (number == "4") {
             evals[d] = NT4_notsym::calcEv(copy.board);
+          } else if (number == "5") {
+            evals[d] = NT5_notsym::calcEv(copy.board);
           } else {
             evals[d] = NT6_notsym::calcEv(copy.board);
           }

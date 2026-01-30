@@ -1,39 +1,79 @@
 # シェルスクリプト解説
 
+
+## 統一ラッパー（推奨）
+
+### 方針
+- 学習系と「学習＋評価＋board_data」系は、統一ラッパーで起動する
+- 既存の細分化スクリプトは温存しつつ、将来的に置換可能
+
+### 実行内容の決定ルール
+- どのタプルを動かすかは `--tuples` または `TUPLES` で決定
+  - 4/6 → NT4/NT6 を実行
+  - 5 → NT5a を実行（nostage-only は不可）
+- stage/nostage は `--stage-mode` で決定（stage|nostage|both）
+- seed 範囲は `--seed-start/--seed-end` か `--seeds` で決定
+- run_name は `RUN_NAME_BASE` + `__stage` / `__nostage`
+
+### 出力先ルール
+- 学習のみ (`run_train_only.sh`)
+  - .dat: `ntuple_dat/<run_name>/seed<seed>/NT{4|5|6}_{sym|notsym}/`
+  - log: `training_logs/<run_name>/seed<seed>/NT{4|5|6}_{sym|notsym}/`
+- 学習＋評価＋board_data (`run_train_eval_boarddata.sh`)
+  - 上記に加えて `board_data/<run_name>/seed<seed>/NT{4|6}_{sym|notsym}/`
+  - meta.json は board_data 生成時に作成
+
 このドキュメントは、リポジトリ内の .sh の用途と使い方をまとめたものです。パスや出力先は現行コードの挙動に基づいています。
 
 ## training/
 
+### run_train_unified.sh
+- 目的: 学習のみを一つのスクリプトで実行（NT4/NT5/NT6 を任意に選択）
+- 主な引数:
+  - --run-name-base NAME
+  - --stage-mode stage|nostage|both（デフォルト: stage）
+  - --seed-start / --seed-end / --seeds
+  - --tuples "4 5 6"（任意の組み合わせ）
+  - --parallel / --stdout-log / --init-ev
+- 出力:
+  - .dat: /HDD/momiyama2/data/study/ntuple_dat/<run_name>/seed<seed>/NT{4|5|6}_{sym|notsym}/
+  - log: /HDD/momiyama2/data/study/training_logs/<run_name>/seed<seed>/NT{4|5|6}_{sym|notsym}/
+- 例:
+  - ./training/run_train_unified.sh --run-name-base 20260128_2000_OI1200 --stage-mode stage --seed-start 10 --seed-end 14 --tuples "4 5 6" --parallel 8
+
+### run_train_only.sh
+- 目的: 学習のみをまとめて実行するラッパー（NT4/NT6、必要ならNT5a）
+- 入力: training/run_train_4patterns_10seeds_trainonly.sh / run_train_nt5a_trainonly.sh を内部呼び出し
+- 主な引数:
+  - --run-name-base NAME
+  - --stage-mode stage|nostage|both（デフォルト: stage）
+  - --seed-start / --seed-end / --seeds
+  - --tuples "4 6"（5 を含むと NT5a を実行）
+  - --parallel / --parallel-by-seed
+  - --stdout-log / --init-ev
+- 例:
+  - ./training/run_train_only.sh --run-name-base 20260128_2000_OI1200 --stage-mode stage --seed-start 10 --seed-end 14 --tuples "4 6" --parallel 8
+
 ### run_train_4patterns_10seeds_trainonly.sh
+- 状態: 旧スクリプト（推奨: run_train_only.sh）
 - 目的: 学習のみ実行（board_data/eval は作成しない）
 - 出力:
   - .dat: /HDD/momiyama2/data/study/ntuple_dat/<run_name>/seed<seed>/NT{4|6}_{sym|notsym}/
   - log: /HDD/momiyama2/data/study/training_logs/<run_name>/seed<seed>/NT{4|6}_{sym|notsym}/
 - 主な指定（環境変数）:
-  - RUN_NAME_BASE（推奨）
+  - RUN_NAME_BASE（推奨。run_name は `__stage` / `__nostage` が付与される）
   - SEEDS（例: "5 6 7 8 9 10 11 12 13 14"）
+  - STAGE_MODE（stage|nostage|both）, STAGE_MODES（例: "stage,nostage"）
+  - NTUPLES（例: "4 6"）
   - PARALLEL, STDOUT_LOG, NTUPLE_DAT_ROOT, LOG_ROOT
+- 主な指定（引数）:
+  - --stage-only / --nostage
+  - --stage-mode MODE（stage|nostage|both）
+  - --stage-modes LIST（例: "stage,nostage"）
+  - --tuples LIST（例: "4 6"）
+  - --parallel-by-seed / --sequential
 - 例:
-  - PARALLEL=$(nproc) RUN_NAME_BASE=20260123_0300 SEEDS="5 6 7 8 9 10 11 12 13 14" ./training/run_train_4patterns_10seeds_trainonly.sh
-
-### run_train_eval_4patterns_10seeds_nostage.sh
-- 目的: 学習（nostage）＋ board_data/meta.json 生成
-- 出力:
-  - .dat: ntuple_dat/<run_name>/seed<seed>/NT*_*（stage 0）
-  - log: training_logs/<run_name>/seed<seed>/NT*_*（log_*.txt）
-  - board_data: board_data/<run_name>/seed<seed>/NT*_*（state/after-state/eval/meta.json）
-- 主な指定（環境変数）:
-  - RUN_NAME, PARALLEL, STDOUT_LOG, NTUPLE_DAT_ROOT, LOG_ROOT, BOARD_DATA_PARENT
-
-### run_train_eval_4patterns_10seeds_stagecompare.sh
-- 目的: 学習（stage + nostage）＋ board_data/meta.json 生成
-- 出力: 上記と同じ構成、run_name は __stage / __nostage が付く
-- 主な指定（環境変数）:
-  - RUN_NAME_BASE, SEEDS, STAGE_MODES, EV_STAGE, PARALLEL, NTUPLE_DAT_ROOT, LOG_ROOT, BOARD_DATA_PARENT
-
-### run_train_eval_4patterns_5seeds.sh
-- 目的: seed数を減らした旧版
-- 出力: train+eval 系と同様
+  - PARALLEL=$(nproc) RUN_NAME_BASE=20260123_0300 SEEDS="5 6 7 8 9 10 11 12 13 14" STAGE_MODE=stage NTUPLES="4 6" ./training/run_train_4patterns_10seeds_trainonly.sh
 
 ### run_make_board_data_from_dat.sh
 - 目的: 既存 .dat から board_data を作成
@@ -214,6 +254,9 @@
 ### run_scatter_pipeline.sh
 - 目的: meta.json 生成（不足分のみ）→ PP評価 → グラフ出力
 - 前提: board_data に after-state.txt/eval.txt があること、perfect_player/db2.out があること
+- 補足: PP出力は `--output-mode` により以下へ保存
+  - per-nt: board_data/<run_name>/seedX/NT*_*/eval-state.txt, eval-after-state.txt
+  - pp: board_data/PP/game_counts<game_count>/seed<seed>/eval-*-<safe_name>.txt
 
 ### run_scatter_range.sh
 - 目的: 範囲指定の scatter（旧版）
@@ -243,7 +286,8 @@
   - --parallel N: 並列数（デフォルト: nproc）
 - 出力先:
   - per-nt: board_data/<run_name>/seedX/NT*_*/eval-state.txt, eval-after-state.txt
-  - pp: board_data/PP/eval-state-<safe_name>.txt, eval-after-state-<safe_name>.txt
+  - pp: board_data/PP/game_counts<game_count>/seed<seed>/eval-*-<safe_name>.txt
+    - game_count は各NTディレクトリの meta.json から取得（無い場合はエラー）
 - 例:
   - ./perfect_player/run_eval_pp_for_run_name.sh --run-name 20260123_0300__nostage
   - ./perfect_player/run_eval_pp_for_run_name.sh --run-name 20260123_0300__nostage --board-root /HDD/momiyama2/data/study/board_data --output-mode per-nt --force --parallel 4
@@ -264,9 +308,10 @@
 ## 補足
 - board_data は Mini-2048-data-processing-main/board_data を前提に探索されます（symlink 推奨）。
 - `--seed/--stage/--tuple` の絞り込みは meta.json が必要です。
-- scatter は PP 評価ファイルが必要（per-nt または board_data/PP）。
+- scatter は PP 評価ファイルが必要（per-nt または board_data/PP/game_counts*/seed*/）。
 
 ### run_train_nt4a_trainonly.sh
+- 状態: 個別NT用（推奨: run_train_only.sh で tuples=4 + NT4a指定が必要な場合はこちら）
 - 目的: NT4a (sym/notsym) の学習のみ実行（board_data/eval は作成しない）
 - 4tuple のタプルセットは NT4a を使用（-DNT4A）
 - 出力:

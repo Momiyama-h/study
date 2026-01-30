@@ -116,6 +116,44 @@ run_one() {
   if [ "$OUTPUT_MODE" = "per-nt" ]; then
     mv -f "$state_path" "$local_state"
     mv -f "$after_path" "$local_after"
+  else
+    seed_dir="$(basename "$(dirname "$d")")"
+    if [[ "$seed_dir" =~ ^seed[0-9]+$ ]]; then
+      seed_num="${seed_dir#seed}"
+    else
+      echo "ERROR: seed dir not found for $d (expected seedN)" >&2
+      return 1
+    fi
+    meta_json="$d/meta.json"
+    if [ ! -f "$meta_json" ]; then
+      echo "ERROR: meta.json not found: $meta_json" >&2
+      return 1
+    fi
+    game_count="$(python3 - <<'PY' "$meta_json"
+import json,sys
+p=sys.argv[1]
+try:
+    meta=json.load(open(p,"r",encoding="utf-8"))
+except Exception:
+    print("")
+    sys.exit(0)
+for key in ("game_count","game_counts","gamecount","games"):
+    if key in meta:
+        print(meta[key])
+        sys.exit(0)
+print("")
+PY
+)"
+    if [ -z "$game_count" ]; then
+      echo "ERROR: game_count missing in $meta_json" >&2
+      return 1
+    fi
+    pp_dir="$BOARD_ROOT/PP/game_counts${game_count}/seed${seed_num}"
+    mkdir -p "$pp_dir"
+    out_state="$pp_dir/eval-state-${safe}.txt"
+    out_after="$pp_dir/eval-after-state-${safe}.txt"
+    mv -f "$state_path" "$out_state"
+    mv -f "$after_path" "$out_after"
   fi
   printf '%s\n' "$rel" >> "$count_file"
 }

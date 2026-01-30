@@ -6,6 +6,8 @@
 
 #include "4tuples_sym.h"
 #include "4tuples_nosym.h"
+#include "5tuples_sym.h"
+#include "5tuples_notsym.h"
 #include "6tuples_sym.h"
 #include "6tuples_notsym.h"
 #include "Game2048_3_3.h"
@@ -15,7 +17,7 @@ namespace fs = std::filesystem;
 using namespace std;
 int main(int argc, char** argv) {
   if (argc < 2 + 1) {
-    fprintf(stderr, "Usage: playgreedy <load-player-name> <EV-file> [sym|notsym] [4|6]\n");
+    fprintf(stderr, "Usage: playgreedy <load-player-name> <EV-file> [sym|notsym] [4|5|6]\n");
     exit(1);
   }
   string dname = argv[1];
@@ -42,7 +44,7 @@ int main(int argc, char** argv) {
     if (opt == "sym" || opt == "notsym") {
       symmetry = opt;
       symmetry_set = true;
-    } else if (opt == "4" || opt == "6") {
+    } else if (opt == "4" || opt == "5" || opt == "6") {
       number = opt;
       number_set = true;
     } else {
@@ -56,10 +58,10 @@ int main(int argc, char** argv) {
     }
   }
   if (!number_set) {
-    if (!basename.empty() && (basename[0] == '4' || basename[0] == '6')) {
+    if (!basename.empty() && (basename[0] == '4' || basename[0] == '5' || basename[0] == '6')) {
       number = string(1, basename[0]);
     } else {
-      fprintf(stderr, "Error: evfile must start with '4' or '6': %s\n", basename.c_str());
+      fprintf(stderr, "Error: evfile must start with '4', '5' or '6': %s\n", basename.c_str());
       exit(1);
     }
   }
@@ -69,6 +71,12 @@ int main(int argc, char** argv) {
       NT4::readEvs(fp);
     } else {
       NT4_notsym::readEvs(fp);
+    }
+  } else if (number == "5") {
+    if (symmetry == "sym") {
+      NT5::readEvs(fp);
+    } else {
+      NT5_notsym::readEvs(fp);
     }
   } else {
     if (symmetry == "sym") {
@@ -113,6 +121,12 @@ int main(int argc, char** argv) {
           eval = NT4::calcEv(board);
         } else {
           eval = NT4_notsym::calcEv(board);
+        }
+      } else if (number == "5") {
+        if (symmetry == "sym") {
+          eval = NT5::calcEv(board);
+        } else {
+          eval = NT5_notsym::calcEv(board);
         }
       } else {
         if (symmetry == "sym") {
