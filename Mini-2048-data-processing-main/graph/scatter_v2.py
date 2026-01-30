@@ -18,6 +18,7 @@ def plot_scatter(
     player_data_list: list[PlayerData],
     output: Path,
     is_show: bool = True,
+    sample_size: int | None = None,
 ):
     """
     パーフェクトプレイヤとプレイヤーの評価値の散布図をプロットする。
@@ -35,8 +36,11 @@ def plot_scatter(
             (ev, pr_eval.evals[pr_eval.idx[0]])
             for ev, pr_eval in zip(pp_evals, pr_eval_and_hand_progress)
         ]
-        # 1000個のデータをランダムで取得
-        scatter_data = random.sample(scatter_data, 1500)
+        # 1500個のデータをランダムで取得（指定があれば上書き）
+        if sample_size is None:
+            sample_size = 1500
+        if sample_size > 0 and len(scatter_data) > sample_size:
+            scatter_data = random.sample(scatter_data, sample_size)
 
         # 散布図のdotの大きさを指定
         plt.scatter(

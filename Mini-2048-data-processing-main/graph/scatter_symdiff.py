@@ -52,7 +52,7 @@ def _scatter_points(pd: PlayerData, sample_size: int) -> tuple[list[float], list
         (ev, pr_eval.evals[pr_eval.idx[0]])
         for ev, pr_eval in zip(pp_evals, pr_eval_and_hand_progress)
     ]
-    if len(scatter_data) > sample_size:
+    if sample_size > 0 and len(scatter_data) > sample_size:
         scatter_data = random.sample(scatter_data, sample_size)
     xs = [d[0] for d in scatter_data]
     ys = [d[1] for d in scatter_data]
@@ -74,7 +74,7 @@ def plot_scatter_symdiff(
     player_data_list: list[PlayerData],
     output: Path,
     is_show: bool = True,
-    sample_size: int = 1500,
+    sample_size: int | None = None,
 ):
     """
     同一seed・同一タプルのsym/notsymを同じ散布図に重ねて描画する。
@@ -97,6 +97,8 @@ def plot_scatter_symdiff(
             pd = items.get(sym)
             if pd is None:
                 continue
+            if sample_size is None:
+                sample_size = 1500
             xs, ys = _scatter_points(pd, sample_size)
             plt.scatter(xs, ys, s=5, label=sym, color=color, alpha=0.6)
             _plot_regression(xs, ys, color=color, label=f"{sym} fit")

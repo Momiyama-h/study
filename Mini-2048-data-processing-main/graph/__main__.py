@@ -233,6 +233,12 @@ arg_parser.add_argument(
     type=str,
     help="出力先を指定する。",
 )
+arg_parser.add_argument(
+    "--sample-size",
+    type=int,
+    default=None,
+    help="scatter用のサンプル数（0以下なら全件）",
+)
 file_group = arg_parser.add_mutually_exclusive_group()
 file_group.add_argument(
     "--exclude",
@@ -512,6 +518,7 @@ elif args.graph == "scatter":
         player_data_list=player_data_list,
         output=output_dir / output_name,
         is_show=args.is_show,
+        sample_size=args.sample_size,
     )
 elif args.graph == "scatter_v2":
     if args.output:
@@ -524,6 +531,7 @@ elif args.graph == "scatter_v2":
         player_data_list=player_data_list,
         output=output_dir / output_name,
         is_show=args.is_show,
+        sample_size=args.sample_size,
     )
 elif args.graph == "scatter-symdiff":
     output_name = args.output if args.output else "scatter_symdiff.pdf"
@@ -532,6 +540,7 @@ elif args.graph == "scatter-symdiff":
         player_data_list=player_data_list,
         output=output_dir / output_name,
         is_show=args.is_show,
+        sample_size=args.sample_size,
     )
 elif args.graph == "evals":
     output_name = args.output if args.output else "evals.pdf"
