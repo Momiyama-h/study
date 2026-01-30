@@ -446,6 +446,7 @@ elif args.graph == "surv-symdiff":
 
     result = survival.calc_survival_rate_data(
         player_data_list=player_data_list,
+        include_pp=True,
     )
 elif args.graph == "surv-mean":
     output_name = args.output if args.output else "survival_mean.pdf"
