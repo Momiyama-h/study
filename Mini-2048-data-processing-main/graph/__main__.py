@@ -197,12 +197,15 @@ arg_parser.add_argument(
     "graph",
     choices=[
         "acc",
+        "acc-symdiff",
         "acc-mean",
         "acc-mean-symdiff",
         "acc-diff",
+        "err-rel-symdiff",
         "err-rel-mean",
         "err-rel-mean-symdiff",
         "err-rel",
+        "err-abs-symdiff",
         "err-abs-mean",
         "err-abs-mean-symdiff",
         "err-abs",
@@ -380,6 +383,12 @@ if args.graph == "acc":
     result = accuracy.calc_accuracy_data(
         player_data_list=player_data_list,
     )
+elif args.graph == "acc-symdiff":
+    output_name = args.output if args.output else "accuracy_symdiff.pdf"
+
+    result = accuracy.calc_accuracy_data(
+        player_data_list=player_data_list,
+    )
 elif args.graph == "acc-mean":
     output_name = args.output if args.output else "accuracy_mean.pdf"
 
@@ -405,6 +414,12 @@ elif args.graph == "err-rel":
     result = error_rel.calc_rel_error_data(
         player_data_list=player_data_list,
     )
+elif args.graph == "err-rel-symdiff":
+    output_name = args.output if args.output else "error_rel_symdiff.pdf"
+
+    result = error_rel.calc_rel_error_data(
+        player_data_list=player_data_list,
+    )
 elif args.graph == "err-rel-mean":
     output_name = args.output if args.output else "error_rel_mean.pdf"
 
@@ -419,6 +434,12 @@ elif args.graph == "err-rel-mean-symdiff":
     )
 elif args.graph == "err-abs":
     output_name = args.output if args.output else "error_abs.pdf"
+
+    result = error_abs.calc_abs_error_data(
+        player_data_list=player_data_list,
+    )
+elif args.graph == "err-abs-symdiff":
+    output_name = args.output if args.output else "error_abs_symdiff.pdf"
 
     result = error_abs.calc_abs_error_data(
         player_data_list=player_data_list,
@@ -566,7 +587,9 @@ if result:
         plt.grid(True, linestyle=":", linewidth=0.5)
     elif args.graph in (
         "err-abs-mean",
+        "err-abs-symdiff",
         "err-rel-mean",
+        "err-rel-symdiff",
         "surv-mean-symdiff",
         "surv",
         "surv-symdiff",
@@ -582,10 +605,13 @@ if result:
             del k_config["order"]
         if args.graph in (
             "acc-mean",
+            "acc-symdiff",
             "acc-mean-symdiff",
+            "err-abs-symdiff",
             "err-abs-mean-symdiff",
             "err-abs-mean",
             "err-rel-mean",
+            "err-rel-symdiff",
             "err-rel-mean-symdiff",
             "surv-mean-symdiff",
             "surv-mean",
