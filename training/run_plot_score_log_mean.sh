@@ -65,11 +65,14 @@ args=(
   --file-prefix "$FILE_PREFIX"
   --ext "$EXT"
   --y-max "$Y_MAX"
-  $( [[ "$COMBINE_TUPLES" -eq 1 ]] && echo "--combine-tuples" )
 )
 
 if [[ -n "$OUTPUT_DIR" ]]; then
   args+=(--output-dir "$OUTPUT_DIR")
+fi
+
+if [[ "$COMBINE_TUPLES" -eq 1 ]]; then
+  args+=(--combine-tuples)
 fi
 
 python3 "$PY" "${args[@]}"
