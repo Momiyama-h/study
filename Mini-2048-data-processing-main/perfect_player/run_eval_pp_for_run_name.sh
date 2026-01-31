@@ -84,10 +84,14 @@ run_one() {
   rel="${d_real#$BOARD_ROOT_REAL/}"
   safe="${rel//\//__}"
   safe="${safe//\\/__}"
-  out_state="$BOARD_ROOT/PP/eval-state-${safe}.txt"
-  out_after="$BOARD_ROOT/PP/eval-after-state-${safe}.txt"
-  local_state="$d/eval-state.txt"
-  local_after="$d/eval-after-state.txt"
+  out_state=""
+  out_after=""
+  local_state="$d/pp-eval-state.txt"
+  local_after="$d/pp-eval-after-state.txt"
+
+  if [ "$OUTPUT_MODE" = "pp" ]; then
+    echo "WARN: output-mode=pp is deprecated; writing under NT directories" >&2
+  fi
 
   if [ "$OUTPUT_MODE" = "per-nt" ]; then
     if [ "$FORCE" -eq 0 ] && [ -f "$local_state" ] && [ -f "$local_after" ]; then
@@ -110,12 +114,23 @@ run_one() {
 
   state_path="$(printf "%s\n" "$state_report" | awk '/Results saved to/{print $NF}' | tail -n1)"
   after_path="$(printf "%s\n" "$after_report" | awk '/Results saved to/{print $NF}' | tail -n1)"
-  [ -n "$state_path" ] || state_path="$out_state"
-  [ -n "$after_path" ] || after_path="$out_after"
+  [ -n "$state_path" ] || state_path="$local_state"
+  [ -n "$after_path" ] || after_path="$local_after"
 
-  if [ "$OUTPUT_MODE" = "per-nt" ]; then
+  if [ "$OUTPUT_MODE" = "pp" ]; then
+    echo "WARN: output-mode=pp is deprecated; writing under NT directories" >&2
+  fi
+
+  # always write under NT directory (per-nt)
+  if [ "$state_path" != "$local_state" ]; then
     mv -f "$state_path" "$local_state"
+  fi
+  if [ "$after_path" != "$local_after" ]; then
     mv -f "$after_path" "$local_after"
+  fi
+  if [ "$OUTPUT_MODE" = "pp" ]; then
+    # legacy mode no longer used (kept for compatibility)
+    :
   else
     seed_dir="$(basename "$(dirname "$d")")"
     if [[ "$seed_dir" =~ ^seed[0-9]+$ ]]; then
@@ -148,12 +163,8 @@ PY
       echo "ERROR: game_count missing in $meta_json" >&2
       return 1
     fi
-    pp_dir="$BOARD_ROOT/PP/game_counts${game_count}/seed${seed_num}"
-    mkdir -p "$pp_dir"
-    out_state="$pp_dir/eval-state-${safe}.txt"
-    out_after="$pp_dir/eval-after-state-${safe}.txt"
-    mv -f "$state_path" "$out_state"
-    mv -f "$after_path" "$out_after"
+    # legacy PP output disabled
+    :
   fi
   printf '%s\n' "$rel" >> "$count_file"
 }

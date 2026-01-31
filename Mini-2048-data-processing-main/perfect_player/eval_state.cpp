@@ -55,16 +55,14 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  string eval_player = "PP";
   readDB2();
 
-  // 出力ディレクトリを作成
-  string output_dir = "../board_data/" + eval_player + "/";
-  fs::create_directory(output_dir);
+  // 出力ディレクトリを作成（入力ディレクトリ直下）
+  string output_dir = input_dir + "/";
+  fs::create_directories(output_dir);
 
-  // 出力ファイルのパス
-  string output_file =
-      output_dir + "eval-state-" + make_safe_name(input_rel.string()) + ".txt";
+  // 出力ファイルのパス（PP評価用）
+  string output_file = output_dir + "pp-eval-state.txt";
 
   // 入力データの読み込み
   read_state_one_game(state_file);

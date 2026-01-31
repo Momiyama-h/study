@@ -69,6 +69,9 @@ class PlayerData:
 
     @property
     def pp_eval_state(self):
+        local_pp = self.target_dir / "pp-eval-state.txt"
+        if local_pp.exists():
+            return local_pp
         local = self.target_dir / "eval-state.txt"
         if local.exists():
             return local
@@ -82,6 +85,9 @@ class PlayerData:
 
     @property
     def pp_eval_after_state(self):
+        local_pp = self.target_dir / "pp-eval-after-state.txt"
+        if local_pp.exists():
+            return local_pp
         local = self.target_dir / "eval-after-state.txt"
         if local.exists():
             return local

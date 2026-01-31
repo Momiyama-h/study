@@ -45,14 +45,11 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  // 出力用ディレクトリとファイル名を設定
-  string eval_player = "PP";
-  string output_dir = "../board_data/" + eval_player + "/";
-  fs::create_directory(output_dir);
+  // 出力用ディレクトリとファイル名を設定（入力ディレクトリ直下）
+  string output_dir = input_dir + "/";
+  fs::create_directories(output_dir);
 
-  string file =
-      "eval-after-state-" + make_safe_name(input_rel.string()) + ".txt";
-  string fullPath = output_dir + file;
+  string fullPath = output_dir + "pp-eval-after-state.txt";
 
   // 出力ファイルを開く
   const char* filename = fullPath.c_str();
