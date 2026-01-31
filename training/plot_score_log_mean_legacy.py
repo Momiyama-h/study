@@ -37,6 +37,11 @@ def parse_args():
         default="score_log_mean_legacy",
         help="output filename prefix",
     )
+    p.add_argument(
+        "--ext",
+        default="png",
+        help="output extension (e.g. png, pdf)",
+    )
     return p.parse_args()
 
 
@@ -73,7 +78,9 @@ def aggregate(files):
     return buckets
 
 
-def plot_tuple(out_dir: Path, prefix: str, tuple_id: int, sym_list, run_dir: Path):
+def plot_tuple(
+    out_dir: Path, prefix: str, ext: str, tuple_id: int, sym_list, run_dir: Path
+):
     plt.figure(figsize=(8, 5))
 
     for sym in sym_list:
@@ -112,7 +119,8 @@ def plot_tuple(out_dir: Path, prefix: str, tuple_id: int, sym_list, run_dir: Pat
     plt.tight_layout()
 
     out_dir.mkdir(parents=True, exist_ok=True)
-    out_path = out_dir / f"{prefix}_NT{tuple_id}_update.png"
+    ext = ext.lstrip(".")
+    out_path = out_dir / f"{prefix}_NT{tuple_id}_update.{ext}"
     plt.savefig(out_path)
     plt.close()
     print(f"saved: {out_path}")
@@ -135,7 +143,7 @@ def main():
     )
 
     for t in tuples:
-        plot_tuple(out_dir, args.file_prefix, t, sym_list, run_dir)
+        plot_tuple(out_dir, args.file_prefix, args.ext, t, sym_list, run_dir)
 
     return 0
 

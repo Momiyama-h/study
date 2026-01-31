@@ -14,6 +14,7 @@ Options:
   --x-axis update|cpu   x-axis (default: update)
   --output-dir DIR      output dir (default: analysis_outputs/<run_name>/score_log)
   --file-prefix NAME    output filename prefix (default: score_log_mean)
+  --ext EXT             output extension (default: png)
 USAGE
 }
 
@@ -24,6 +25,7 @@ SYM_LIST="sym,notsym"
 X_AXIS="update"
 OUTPUT_DIR=""
 FILE_PREFIX="score_log_mean"
+EXT="png"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -34,6 +36,7 @@ while [[ $# -gt 0 ]]; do
     --x-axis) X_AXIS="$2"; shift 2;;
     --output-dir) OUTPUT_DIR="$2"; shift 2;;
     --file-prefix) FILE_PREFIX="$2"; shift 2;;
+    --ext) EXT="$2"; shift 2;;
     -h|--help) usage; exit 0;;
     *) echo "Unknown option: $1"; usage; exit 1;;
   esac
@@ -54,6 +57,7 @@ args=(
   --sym-list "$SYM_LIST"
   --x-axis "$X_AXIS"
   --file-prefix "$FILE_PREFIX"
+  --ext "$EXT"
 )
 
 if [[ -n "$OUTPUT_DIR" ]]; then

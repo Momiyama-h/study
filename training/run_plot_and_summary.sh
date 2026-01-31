@@ -7,6 +7,7 @@ summary_file="score_summary.csv"
 echo "seed,tuple,symmetry,timestamp,score" > "$summary_file"
 
 LOG_ROOT="${LOG_ROOT:-/HDD/momiyama2/data/study/training_logs}"
+EXT="${EXT:-png}"
 SEEDS=("$@")  # コマンドライン引数で複数seed指定
 TUPLES=(4 6)
 
@@ -20,7 +21,8 @@ for SEED in "${SEEDS[@]}"; do
       ts=$(echo "$file" | sed -E 's/.*_seed[0-9]+_([0-9]{8}_[0-9]{4})\.txt/\1/')
       pair_file="$(echo "$file" | sed "s/NT${tuple}_sym/NT${tuple}_notsym/" | sed "s/_sym_/_notsym_/")"
       if [ -f "$pair_file" ]; then
-        png="${LOG_ROOT}/log_${tuple}tuples_seed${SEED}_${ts}.png"
+        ext="${EXT#.}"
+        png="${LOG_ROOT}/log_${tuple}tuples_seed${SEED}_${ts}.${ext}"
         # plot_scores.pyの標準出力を取得
         output=$(python plot_scores.py --file1 "$file" --file2 "$pair_file" --output "$png")
         # sym側のfinal

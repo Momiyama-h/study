@@ -16,6 +16,7 @@ Options:
   --run-ts TS          match logs with this timestamp (optional)
   --log-root DIR       training_logs root (default: /HDD/momiyama2/data/study/training_logs)
   --output-root DIR    output root (default: /HDD/momiyama2/data/study/analysis_outputs/training_scores)
+  --ext EXT            output extension (default: png)
   --dry-run            show actions without executing
 USAGE
 }
@@ -29,6 +30,7 @@ AVESCOPE="10000"
 RUN_TS=""
 LOG_ROOT="/HDD/momiyama2/data/study/training_logs"
 OUTPUT_ROOT="/HDD/momiyama2/data/study/analysis_outputs/training_scores"
+EXT="png"
 DRY_RUN=0
 
 while [[ $# -gt 0 ]]; do
@@ -42,6 +44,7 @@ while [[ $# -gt 0 ]]; do
     --run-ts) RUN_TS="$2"; shift 2;;
     --log-root) LOG_ROOT="$2"; shift 2;;
     --output-root) OUTPUT_ROOT="$2"; shift 2;;
+    --ext) EXT="$2"; shift 2;;
     --dry-run) DRY_RUN=1; shift;;
     -h|--help) usage; exit 0;;
     *) echo "Unknown option: $1"; usage; exit 1;;
@@ -100,7 +103,8 @@ for seed in "${SEED_ARR[@]}"; do
       continue
     fi
     out_dir="${OUT_BASE}/NT${tuple}"
-    out_png="${out_dir}/score_seed${seed}_NT${tuple}.png"
+    ext="${EXT#.}"
+    out_png="${out_dir}/score_seed${seed}_NT${tuple}.${ext}"
     if [[ "$DRY_RUN" -eq 1 ]]; then
       echo "DRY-RUN: $sym_log vs $notsym_log -> $out_png"
       continue

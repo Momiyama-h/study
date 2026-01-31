@@ -7,6 +7,7 @@ LOG_ROOT="${LOG_ROOT:-/HDD/momiyama2/data/study/training_logs}"
 RUN_TS="${RUN_TS:-}"
 AVESCOPE="${AVESCOPE:-10000}"
 OUTPUT_ROOT="${OUTPUT_ROOT:-/HDD/momiyama2/data/study/analysis_outputs/training_scores}"
+EXT="${EXT:-png}"
 
 SEEDS=(${SEEDS:-"15 16 17 18 19 20 21 22 23 24"})
 TUPLES=(4 6)
@@ -35,7 +36,8 @@ for seed in "${SEEDS[@]}"; do
       fi
       out_dir="${OUTPUT_ROOT}/${RUN_TS}/tuple${tuple}"
       mkdir -p "$out_dir"
-      out_png="${out_dir}/score_seed${seed}_${RUN_TS}__${stage_tag}.png"
+      ext="${EXT#.}"
+      out_png="${out_dir}/score_seed${seed}_${RUN_TS}__${stage_tag}.${ext}"
       python3 "$SCRIPT_DIR/plot_scores.py" \
         --file1 "$sym_log" \
         --file2 "$notsym_log" \

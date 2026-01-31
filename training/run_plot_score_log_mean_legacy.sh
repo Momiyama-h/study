@@ -13,6 +13,7 @@ Options:
   --sym-list LIST       comma-separated sym list (default: sym,notsym)
   --output-dir DIR      output dir (default: analysis_outputs/<run_name>/score_log)
   --file-prefix NAME    output filename prefix (default: score_log_mean_legacy)
+  --ext EXT             output extension (default: png)
 USAGE
 }
 
@@ -22,6 +23,7 @@ TUPLES="4,6"
 SYM_LIST="sym,notsym"
 OUTPUT_DIR=""
 FILE_PREFIX="score_log_mean_legacy"
+EXT="png"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -31,6 +33,7 @@ while [[ $# -gt 0 ]]; do
     --sym-list) SYM_LIST="$2"; shift 2;;
     --output-dir) OUTPUT_DIR="$2"; shift 2;;
     --file-prefix) FILE_PREFIX="$2"; shift 2;;
+    --ext) EXT="$2"; shift 2;;
     -h|--help) usage; exit 0;;
     *) echo "Unknown option: $1"; usage; exit 1;;
   esac
@@ -50,6 +53,7 @@ args=(
   --tuples "$TUPLES"
   --sym-list "$SYM_LIST"
   --file-prefix "$FILE_PREFIX"
+  --ext "$EXT"
 )
 
 if [[ -n "$OUTPUT_DIR" ]]; then
