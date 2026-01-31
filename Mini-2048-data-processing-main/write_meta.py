@@ -46,6 +46,12 @@ def main() -> int:
         action="store_true",
         help="meta.jsonが存在する場合に上書きする",
     )
+    parser.add_argument(
+        "--game-count",
+        type=int,
+        default=None,
+        help="評価ゲーム数（meta.jsonに記録）",
+    )
     args = parser.parse_args()
 
     data_dir = Path(args.data_dir).resolve()
@@ -60,6 +66,8 @@ def main() -> int:
     except ValueError:
         meta["relpath"] = str(data_dir)
         meta["id"] = make_safe_name(data_dir.name)
+    if args.game_count is not None:
+        meta["game_count"] = int(args.game_count)
 
     meta_path = data_dir / "meta.json"
     if meta_path.exists() and not args.force:

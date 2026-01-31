@@ -118,16 +118,17 @@ run_one() {
   if [ -f "$write_meta" ] && [ -d "$data_dir" ]; then
     local meta_path="${data_dir}/meta.json"
     if [ ! -f "$meta_path" ]; then
-      python3 "$write_meta" --board-dir "$BOARD_ROOT" "$data_dir" "$evfile"
+      python3 "$write_meta" --board-dir "$BOARD_ROOT" --game-count "$GAME_COUNT" "$data_dir" "$evfile"
     else
-      python3 - "$meta_path" "$(basename "$evfile")" "$seed" "$stage" "$tuple" "$sym" <<'PY'
+      python3 - "$meta_path" "$(basename "$evfile")" "$seed" "$stage" "$tuple" "$sym" "$GAME_COUNT" <<'PY'
 import json
 import sys
 
-meta_path, evfile, seed, stage, tuple_num, sym = sys.argv[1:7]
+meta_path, evfile, seed, stage, tuple_num, sym, game_count = sys.argv[1:8]
 seed = int(seed)
 stage = int(stage)
 tuple_num = int(tuple_num)
+game_count = int(game_count)
 ok = True
 try:
     data = json.load(open(meta_path, "r", encoding="utf-8"))
@@ -147,11 +148,12 @@ check("seed", seed)
 check("stage", stage)
 check("tuple", tuple_num)
 check("sym", sym)
+check("game_count", game_count)
 sys.exit(2 if not ok else 0)
 PY
       status=$?
       if [ "$status" -eq 2 ] && [ "$FORCE_META" -eq 1 ]; then
-        python3 "$write_meta" --force --board-dir "$BOARD_ROOT" "$data_dir" "$evfile"
+        python3 "$write_meta" --force --board-dir "$BOARD_ROOT" --game-count "$GAME_COUNT" "$data_dir" "$evfile"
       fi
     fi
   fi
