@@ -117,6 +117,12 @@ run_one() {
   [ -n "$state_path" ] || state_path="$local_state"
   [ -n "$after_path" ] || after_path="$local_after"
 
+  # normalize to absolute paths to avoid mv same-file errors
+  state_path="$(readlink -f "$state_path")"
+  after_path="$(readlink -f "$after_path")"
+  local_state="$(readlink -f "$local_state")"
+  local_after="$(readlink -f "$local_after")"
+
   if [ "$OUTPUT_MODE" = "pp" ]; then
     echo "WARN: output-mode=pp is deprecated; writing under NT directories" >&2
   fi
