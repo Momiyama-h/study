@@ -15,6 +15,7 @@ TUPLES_STR="${TUPLES:-4 5 6}"
 PARALLEL="${PARALLEL:-8}"
 STDOUT_LOG="${STDOUT_LOG:-0}"
 INIT_EV="${INIT_EV:-}"
+NT4A="${NT4A:-0}"
 
 usage() {
   cat <<'USAGE'
@@ -31,6 +32,7 @@ Options:
   --parallel N           max parallel jobs (default: 8)
   --stdout-log 0|1       enable stdout log in training (default: 0)
   --init-ev N            optimistic init value (INIT_EV)
+  --nt4a                 use NT4a tuple set when tuple=4
   -h, --help             show help
 
 Outputs:
@@ -50,6 +52,7 @@ while [[ $# -gt 0 ]]; do
     --parallel) PARALLEL="$2"; shift 2;;
     --stdout-log) STDOUT_LOG="$2"; shift 2;;
     --init-ev) INIT_EV="$2"; shift 2;;
+    --nt4a) NT4A=1; shift;;
     -h|--help) usage; exit 0;;
     *) echo "Unknown option: $1" >&2; usage; exit 1;;
   esac
@@ -71,6 +74,17 @@ case "$STAGE_MODE" in
 
 TUPLES_STR="${TUPLES_STR//,/ }"
 read -r -a TUPLES <<< "$TUPLES_STR"
+
+if [[ "$NT4A" -eq 1 ]]; then
+  for t in "${TUPLES[@]}"; do
+    if [[ "$t" == "4" ]]; then
+      if [[ "$RUN_NAME_BASE" != *"__nt4a"* ]]; then
+        RUN_NAME_BASE="${RUN_NAME_BASE}__nt4a"
+      fi
+      break
+    fi
+  done
+fi
 
 compile_train() {
   local src="$1"
@@ -131,8 +145,13 @@ for stage_mode in $(echo "$STAGE_MODE" | sed 's/both/stage nostage/'); do
   for tuple in "${TUPLES[@]}"; do
     case "$tuple" in
       4)
-        compile_train "$BASE_MINI/learning_ntuple_sym.cpp" "$BASE_MINI/learn_4sym${bin_suffix}" "-DUSE_4TUPLE $train_flags"
-        compile_train "$BASE_MINI/learning_ntuple_notsym.cpp" "$BASE_MINI/learn_4notsym${bin_suffix}" "-DUSE_4TUPLE $train_flags"
+        if [[ "$NT4A" -eq 1 ]]; then
+          compile_train "$BASE_MINI/learning_ntuple_sym.cpp" "$BASE_MINI/learn_4sym${bin_suffix}" "-DUSE_4TUPLE -DNT4A $train_flags"
+          compile_train "$BASE_MINI/learning_ntuple_notsym.cpp" "$BASE_MINI/learn_4notsym${bin_suffix}" "-DUSE_4TUPLE -DNT4A $train_flags"
+        else
+          compile_train "$BASE_MINI/learning_ntuple_sym.cpp" "$BASE_MINI/learn_4sym${bin_suffix}" "-DUSE_4TUPLE $train_flags"
+          compile_train "$BASE_MINI/learning_ntuple_notsym.cpp" "$BASE_MINI/learn_4notsym${bin_suffix}" "-DUSE_4TUPLE $train_flags"
+        fi
         ;;
       5)
         compile_train "$BASE_MINI/learning_ntuple_sym_nt5a.cpp" "$BASE_MINI/learn_5sym${bin_suffix}" "-DUSE_5TUPLE $train_flags"

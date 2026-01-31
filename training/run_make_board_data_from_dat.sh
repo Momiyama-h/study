@@ -99,6 +99,12 @@ run_one() {
     echo "MISSING: $evfile" >&2
     return 1
   fi
+  local tuple_label="$tuple"
+  if [[ "$tuple" == "4" ]]; then
+    if [[ "$RUN_NAME" == *"__nt4a"* ]] || [[ "$DAT_RUN_NAME" == *"__nt4a"* ]]; then
+      tuple_label="4a"
+    fi
+  fi
   local play_args=()
   if [ "$SINGLE_STAGE" -eq 1 ]; then
     play_args+=(--single-stage)
@@ -118,13 +124,13 @@ run_one() {
   if [ -f "$write_meta" ] && [ -d "$data_dir" ]; then
     local meta_path="${data_dir}/meta.json"
     if [ ! -f "$meta_path" ]; then
-      python3 "$write_meta" --board-dir "$BOARD_ROOT" --game-count "$GAME_COUNT" "$data_dir" "$evfile"
+      python3 "$write_meta" --board-dir "$BOARD_ROOT" --game-count "$GAME_COUNT" --tuple-label "$tuple_label" "$data_dir" "$evfile"
     else
-      python3 - "$meta_path" "$(basename "$evfile")" "$seed" "$stage" "$tuple" "$sym" "$GAME_COUNT" <<'PY'
+      python3 - "$meta_path" "$(basename "$evfile")" "$seed" "$stage" "$tuple" "$sym" "$GAME_COUNT" "$tuple_label" <<'PY'
 import json
 import sys
 
-meta_path, evfile, seed, stage, tuple_num, sym, game_count = sys.argv[1:8]
+meta_path, evfile, seed, stage, tuple_num, sym, game_count, tuple_label = sys.argv[1:9]
 seed = int(seed)
 stage = int(stage)
 tuple_num = int(tuple_num)
@@ -149,11 +155,13 @@ check("stage", stage)
 check("tuple", tuple_num)
 check("sym", sym)
 check("game_count", game_count)
+if tuple_label:
+    check("tuple_label", tuple_label)
 sys.exit(2 if not ok else 0)
 PY
       status=$?
       if [ "$status" -eq 2 ] && [ "$FORCE_META" -eq 1 ]; then
-        python3 "$write_meta" --force --board-dir "$BOARD_ROOT" --game-count "$GAME_COUNT" "$data_dir" "$evfile"
+        python3 "$write_meta" --force --board-dir "$BOARD_ROOT" --game-count "$GAME_COUNT" --tuple-label "$tuple_label" "$data_dir" "$evfile"
       fi
     fi
   fi

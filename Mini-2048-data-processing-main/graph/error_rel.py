@@ -9,6 +9,7 @@ from .common import (
     get_eval_and_hand_progress,
     moving_average,
     PlayerData,
+    tuple_label,
     tuple_sym_stage,
 )
 
@@ -95,27 +96,30 @@ def _calc_rel_error_curve(player_data: PlayerData) -> GraphData:
 def calc_rel_error_mean_data(
     player_data_list: list[PlayerData],
 ) -> PlotData:
-    grouped: dict[tuple[int, str, int | None], list[GraphData]] = defaultdict(list)
+    grouped: dict[
+        tuple[int, str, int | None], list[tuple[PlayerData, GraphData]]
+    ] = defaultdict(list)
     for player_data in player_data_list:
         info = tuple_sym_stage(player_data)
         if info is None:
             continue
-        grouped[info].append(_calc_rel_error_curve(player_data))
+        grouped[info].append((player_data, _calc_rel_error_curve(player_data)))
 
     result = PlotData(
         x_label="progress",
         y_label="rel error mean",
         data={},
     )
-    for (tuple_v, sym, stage), curves in grouped.items():
-        if not curves:
+    for (tuple_v, sym, stage), items in grouped.items():
+        if not items:
             continue
+        curves = [c for _, c in items]
         min_len = min(len(c.x) for c in curves)
         if min_len == 0:
             continue
         xs = [np.mean([c.x[i] for c in curves]) for i in range(min_len)]
         ys = [np.mean([c.y[i] for c in curves]) for i in range(min_len)]
-        label = f"NT{tuple_v}_{sym}_mean"
+        label = f"NT{tuple_label(items[0][0], tuple_v)}_{sym}_mean"
         if stage is not None:
             label += f"_st{stage}"
         result.data[label] = GraphData(x=xs, y=ys)

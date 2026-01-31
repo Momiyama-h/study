@@ -5,7 +5,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 
-from .common import PlayerData, get_eval_and_hand_progress
+from .common import PlayerData, get_eval_and_hand_progress, tuple_label
 
 
 def get_evals(eval_file: Path) -> list[float]:
@@ -108,7 +108,8 @@ def plot_scatter_symdiff(
         plt.legend()
         plt.tight_layout()
 
-        suffix = f"seed{seed}_NT{tuple_v}"
+        label_tuple = tuple_label(next(iter(items.values())), tuple_v)
+        suffix = f"seed{seed}_NT{label_tuple}"
         if stage is not None:
             suffix += f"_st{stage}"
         save_path = output.with_stem(f"{output.stem}_{suffix}")

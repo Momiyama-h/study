@@ -79,8 +79,19 @@ def label_from_meta(data_dir: Path) -> str | None:
     stage = meta.get("stage")
     if tuple_v is None or sym is None or seed is None:
         return None
+    tuple_label = None
+    for key in ("tuple_label", "tuple_set", "tuple_name"):
+        if key in meta:
+            tuple_label = str(meta[key])
+            break
+    if tuple_label is None:
+        run_name = data_dir.relative_to(board_dir).parts[0].lower()
+        if tuple_v == 4 and "nt4a" in run_name:
+            tuple_label = "4a"
+        else:
+            tuple_label = str(tuple_v)
 
-    label = f"NT{tuple_v}_{sym}_s{seed}"
+    label = f"NT{tuple_label}_{sym}_s{seed}"
     if stage is not None:
         label += f"_st{stage}"
     return label

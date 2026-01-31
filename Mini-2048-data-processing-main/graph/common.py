@@ -141,6 +141,20 @@ def tuple_sym_stage(player_data: PlayerData):
     return None
 
 
+def tuple_label(player_data: PlayerData, tuple_v: int | None = None) -> str:
+    meta = player_data.meta or {}
+    for key in ("tuple_label", "tuple_set", "tuple_name"):
+        if key in meta:
+            return str(meta[key])
+    if tuple_v is None:
+        info = tuple_sym_stage(player_data)
+        tuple_v = info[0] if info else None
+    run_name = player_data.rel_path.parts[0].lower() if player_data.rel_path.parts else ""
+    if tuple_v == 4 and "nt4a" in run_name:
+        return "4a"
+    return str(tuple_v) if tuple_v is not None else "?"
+
+
 @dataclass
 class EvalAndHandProgress:
     evals: list[float]  # 長さ4のリスト

@@ -52,6 +52,12 @@ def main() -> int:
         default=None,
         help="評価ゲーム数（meta.jsonに記録）",
     )
+    parser.add_argument(
+        "--tuple-label",
+        type=str,
+        default=None,
+        help="tuple表示用ラベル（例: 4a, 4b, 4, 5, 6）",
+    )
     args = parser.parse_args()
 
     data_dir = Path(args.data_dir).resolve()
@@ -68,6 +74,8 @@ def main() -> int:
         meta["id"] = make_safe_name(data_dir.name)
     if args.game_count is not None:
         meta["game_count"] = int(args.game_count)
+    if args.tuple_label is not None and args.tuple_label != "":
+        meta["tuple_label"] = str(args.tuple_label)
 
     meta_path = data_dir / "meta.json"
     if meta_path.exists() and not args.force:

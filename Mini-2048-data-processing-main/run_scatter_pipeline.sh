@@ -104,9 +104,22 @@ for run in board.glob("*/*/NT*_*"):
         continue
     tuple_num = nt_name[2]
     sym = nt_name.split("_", 1)[1]
+    run_name = run.parts[-3]
+    tuple_label = tuple_num
+    if tuple_num == "4" and "nt4a" in run_name.lower():
+        tuple_label = "4a"
     evfile = f"{tuple_num}tuple_{sym}_data_{seed}_{stage}.dat"
     subprocess.run(
-        ["python3", write_meta, "--board-dir", str(board), str(run), evfile],
+        [
+            "python3",
+            write_meta,
+            "--board-dir",
+            str(board),
+            "--tuple-label",
+            tuple_label,
+            str(run),
+            evfile,
+        ],
         check=True,
     )
 PY
