@@ -16,6 +16,7 @@ Options:
   --file-prefix NAME    output filename prefix (default: score_log_mean)
   --ext EXT             output extension (default: png)
   --y-max N            y-axis max (default: 5000)
+  --combine-tuples    plot NT4/5/6 together per sym (default: off)
 USAGE
 }
 
@@ -28,6 +29,7 @@ OUTPUT_DIR=""
 FILE_PREFIX="score_log_mean"
 EXT="png"
 Y_MAX="5000"
+COMBINE_TUPLES=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -40,6 +42,7 @@ while [[ $# -gt 0 ]]; do
     --file-prefix) FILE_PREFIX="$2"; shift 2;;
     --ext) EXT="$2"; shift 2;;
     --y-max) Y_MAX="$2"; shift 2;;
+    --combine-tuples) COMBINE_TUPLES=1; shift;;
     -h|--help) usage; exit 0;;
     *) echo "Unknown option: $1"; usage; exit 1;;
   esac
@@ -62,6 +65,7 @@ args=(
   --file-prefix "$FILE_PREFIX"
   --ext "$EXT"
   --y-max "$Y_MAX"
+  $( [[ "$COMBINE_TUPLES" -eq 1 ]] && echo "--combine-tuples" )
 )
 
 if [[ -n "$OUTPUT_DIR" ]]; then

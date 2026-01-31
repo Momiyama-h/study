@@ -55,6 +55,12 @@ def parse_args():
         default=5000,
         help="y-axis max (0 to disable)",
     )
+
+    p.add_argument(
+        "--combine-tuples",
+        action="store_true",
+        help="plot NT4/5/6 together on one figure per sym",
+    )
     return p.parse_args()
 
 
@@ -128,6 +134,7 @@ def plot_for_tuple(
     plt.title(
         f"Score mean ± SD vs {('update_count' if x_axis=='update' else 'cpu_sec')} (NT{tuple_id})"
     )
+    plt.grid(axis="y", linestyle="--", alpha=0.3)
     plt.legend()
     plt.tight_layout()
 
@@ -163,12 +170,61 @@ def main():
         else Path("/HDD/momiyama2/data/study/analysis_outputs") / args.run_name / "score_log"
     )
 
-    for t in tuples:
-        plot_for_tuple(
-            out_dir, args.file_prefix, args.ext, t, sym_list, buckets, args.x_axis, args.y_max
-        )
+    if args.combine_tuples:
+        for sym in sym_list:
+            plot_combined(
+                out_dir, args.file_prefix, args.ext, tuples, sym, buckets, args.x_axis, args.y_max
+            )
+    else:
+        for t in tuples:
+            plot_for_tuple(
+                out_dir, args.file_prefix, args.ext, t, sym_list, buckets, args.x_axis, args.y_max
+            )
 
     return 0
+
+
+def plot_combined(out_dir: Path, prefix: str, ext: str, tuples, sym: str, buckets, x_axis, y_max):
+    plt.figure(figsize=(8, 5))
+    for tuple_id in tuples:
+        cond = f"nt{tuple_id}_{sym}"
+        series = buckets.get(cond, {})
+        if not series:
+            continue
+        xs = sorted(series.keys())
+        means = []
+        sds = []
+        for x in xs:
+            m, sd = mean_sd(series[x])
+            means.append(m)
+            sds.append(sd)
+        line, = plt.plot(xs, means, label=f"nt{tuple_id}_{sym}")
+        color = line.get_color()
+        plt.fill_between(
+            xs,
+            [m - s for m, s in zip(means, sds)],
+            [m + s for m, s in zip(means, sds)],
+            color=color,
+            alpha=0.03,
+        )
+
+    plt.xlabel("traincount_total" if x_axis == "update" else "cpu_sec_total")
+    plt.ylabel("score_mean (seed mean ± SD)")
+    if y_max and y_max > 0:
+        plt.ylim(0, y_max)
+    plt.title(
+        f"Score mean ± SD vs {('update_count' if x_axis=='update' else 'cpu_sec')} ({sym})"
+    )
+    plt.grid(axis="y", linestyle="--", alpha=0.3)
+    plt.legend()
+    plt.tight_layout()
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    ext = ext.lstrip(".")
+    out_path = out_dir / f"{prefix}_{sym}_all_{x_axis}.{ext}"
+    plt.savefig(out_path)
+    plt.close()
+    print(f"saved: {out_path}")
 
 
 if __name__ == "__main__":
