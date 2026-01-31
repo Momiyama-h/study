@@ -11,7 +11,7 @@ Options:
   --seed-start N       start seed (optional)
   --seed-end N         end seed (optional)
   --seeds LIST         comma-separated seeds (optional; overrides start/end)
-  --tuples LIST        comma-separated tuples (default: 4,6)
+  --tuples LIST        comma-separated tuples (default: 4,5,6)
   --avescope N         averaging interval (default: 10000)
   --run-ts TS          match logs with this timestamp (optional)
   --log-root DIR       training_logs root (default: /HDD/momiyama2/data/study/training_logs)
@@ -25,7 +25,7 @@ RUN_NAME=""
 SEED_START=""
 SEED_END=""
 SEEDS=""
-TUPLES="4,6"
+TUPLES="4,5,6"
 AVESCOPE="10000"
 RUN_TS=""
 LOG_ROOT="/HDD/momiyama2/data/study/training_logs"

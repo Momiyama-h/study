@@ -23,7 +23,7 @@ def parse_args():
         default="/HDD/momiyama2/data/study/ntuple_dat",
         help="root of ntuple_dat",
     )
-    p.add_argument("--tuples", default="4,6", help="comma-separated tuples, e.g. 4,6")
+    p.add_argument("--tuples", default="4,5,6", help="comma-separated tuples, e.g. 4,6")
     p.add_argument(
         "--sym-list", default="sym,notsym", help="comma-separated sym list"
     )
@@ -47,6 +47,13 @@ def parse_args():
         "--ext",
         default="png",
         help="output extension (e.g. png, pdf)",
+    )
+
+    p.add_argument(
+        "--y-max",
+        type=float,
+        default=5000,
+        help="y-axis max (0 to disable)",
     )
     return p.parse_args()
 
@@ -89,7 +96,7 @@ def mean_sd(vals):
 
 
 def plot_for_tuple(
-    out_dir: Path, prefix: str, ext: str, tuple_id: int, sym_list, buckets, x_axis
+    out_dir: Path, prefix: str, ext: str, tuple_id: int, sym_list, buckets, x_axis, y_max
 ):
     plt.figure(figsize=(8, 5))
     for sym in sym_list:
@@ -116,6 +123,8 @@ def plot_for_tuple(
 
     plt.xlabel("traincount_total" if x_axis == "update" else "cpu_sec_total")
     plt.ylabel("score_mean (seed mean ± SD)")
+    if y_max and y_max > 0:
+        plt.ylim(0, y_max)
     plt.title(
         f"Score mean ± SD vs {('update_count' if x_axis=='update' else 'cpu_sec')} (NT{tuple_id})"
     )
@@ -156,7 +165,7 @@ def main():
 
     for t in tuples:
         plot_for_tuple(
-            out_dir, args.file_prefix, args.ext, t, sym_list, buckets, args.x_axis
+            out_dir, args.file_prefix, args.ext, t, sym_list, buckets, args.x_axis, args.y_max
         )
 
     return 0

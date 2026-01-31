@@ -9,23 +9,25 @@ Usage:
 Options:
   --run-name NAME       run_name under ntuple_dat (required)
   --ntuple-dat-root DIR ntuple_dat root (default: /HDD/momiyama2/data/study/ntuple_dat)
-  --tuples LIST         comma-separated tuples (default: 4,6)
+  --tuples LIST         comma-separated tuples (default: 4,5,6)
   --sym-list LIST       comma-separated sym list (default: sym,notsym)
   --x-axis update|cpu   x-axis (default: update)
   --output-dir DIR      output dir (default: analysis_outputs/<run_name>/score_log)
   --file-prefix NAME    output filename prefix (default: score_log_mean)
   --ext EXT             output extension (default: png)
+  --y-max N            y-axis max (default: 5000)
 USAGE
 }
 
 RUN_NAME=""
 NTUPLE_DAT_ROOT="/HDD/momiyama2/data/study/ntuple_dat"
-TUPLES="4,6"
+TUPLES="4,5,6"
 SYM_LIST="sym,notsym"
 X_AXIS="update"
 OUTPUT_DIR=""
 FILE_PREFIX="score_log_mean"
 EXT="png"
+Y_MAX="5000"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -37,6 +39,7 @@ while [[ $# -gt 0 ]]; do
     --output-dir) OUTPUT_DIR="$2"; shift 2;;
     --file-prefix) FILE_PREFIX="$2"; shift 2;;
     --ext) EXT="$2"; shift 2;;
+    --y-max) Y_MAX="$2"; shift 2;;
     -h|--help) usage; exit 0;;
     *) echo "Unknown option: $1"; usage; exit 1;;
   esac
@@ -58,6 +61,7 @@ args=(
   --x-axis "$X_AXIS"
   --file-prefix "$FILE_PREFIX"
   --ext "$EXT"
+  --y-max "$Y_MAX"
 )
 
 if [[ -n "$OUTPUT_DIR" ]]; then
