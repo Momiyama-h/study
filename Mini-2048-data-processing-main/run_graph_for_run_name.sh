@@ -11,6 +11,8 @@ Options:
   --graph GRAPH        analysis type (required: acc|acc-symdiff|acc-mean|acc-mean-symdiff|err-rel|err-rel-symdiff|err-rel-mean|err-rel-mean-symdiff|err-abs|err-abs-symdiff|err-abs-mean|err-abs-mean-symdiff|surv|surv-mean|surv-mean-symdiff|surv-symdiff|surv-diff|surv-diff-mean|evals|evals-mean|evals-mean-symdiff|scatter|scatter_v2|scatter-symdiff)
   --output-name NAME   output filename without extension (default: <graph>)
   --ext EXT            output extension (default: png)
+  --xlim MIN,MAX       x-axis range (e.g. 0,800)
+  --ylim MIN,MAX       y-axis range (e.g. 0,1)
   --seed-start N       start seed (optional)
   --seed-end N         end seed (optional)
   --combine-seeds      combine multiple seeds into a single plot
@@ -26,6 +28,8 @@ RUN_NAME=""
 GRAPH=""
 OUTPUT_NAME=""
 EXT="png"
+X_LIM=""
+Y_LIM=""
 SEED_START=""
 SEED_END=""
 COMBINE_SEEDS=0
@@ -42,6 +46,8 @@ while [[ $# -gt 0 ]]; do
     --graph) GRAPH="$2"; shift 2;;
     --output-name) OUTPUT_NAME="$2"; shift 2;;
     --ext) EXT="$2"; shift 2;;
+    --xlim) X_LIM="$2"; shift 2;;
+    --ylim) Y_LIM="$2"; shift 2;;
     --seed-start) SEED_START="$2"; shift 2;;
     --seed-end) SEED_END="$2"; shift 2;;
     --combine-seeds) COMBINE_SEEDS=1; shift;;
@@ -115,6 +121,12 @@ PY
     --output "$output_file" --output-dir "$out_dir")
   if [ -n "$SAMPLE_SIZE" ]; then
     cmd+=(--sample-size "$SAMPLE_SIZE")
+  fi
+  if [ -n "$X_LIM" ]; then
+    cmd+=(--xlim "$X_LIM")
+  fi
+  if [ -n "$Y_LIM" ]; then
+    cmd+=(--ylim "$Y_LIM")
   fi
   cmd+=(--tuple "$tuple")
   if [ -n "$sym" ]; then

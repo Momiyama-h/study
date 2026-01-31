@@ -109,3 +109,30 @@ def calc_abs_error_mean_data(
             label += f"_st{stage}"
         result.data[label] = GraphData(x=xs, y=ys)
     return result
+
+
+def calc_abs_error_symdiff_data(
+    player_data_list: list[PlayerData],
+) -> PlotData:
+    """
+    seedごとに sym/notsym を同じグラフで比較できるように、
+    symの分割をせずに短いラベルで出力する。
+    """
+    result = PlotData(
+        x_label="progress",
+        y_label="abs error",
+        data={},
+    )
+    for player_data in player_data_list:
+        info = tuple_sym_stage(player_data)
+        if info is None:
+            continue
+        tuple_v, sym, stage = info
+        seed = player_data._seed_from_path()
+        label = f"NT{tuple_v}_{sym}"
+        if seed is not None:
+            label += f"_seed{seed}"
+        if stage is not None:
+            label += f"_st{stage}"
+        result.data[label] = _calc_abs_error_curve(player_data)
+    return result

@@ -234,6 +234,18 @@ arg_parser.add_argument(
     help="出力先を指定する。",
 )
 arg_parser.add_argument(
+    "--xlim",
+    type=str,
+    default="",
+    help="x軸範囲を 'min,max' で指定（例: 0,800）",
+)
+arg_parser.add_argument(
+    "--ylim",
+    type=str,
+    default="",
+    help="y軸範囲を 'min,max' で指定（例: 0,1）",
+)
+arg_parser.add_argument(
     "--sample-size",
     type=int,
     default=None,
@@ -447,7 +459,7 @@ elif args.graph == "err-abs":
 elif args.graph == "err-abs-symdiff":
     output_name = args.output if args.output else "error_abs_symdiff.pdf"
 
-    result = error_abs.calc_abs_error_data(
+    result = error_abs.calc_abs_error_symdiff_data(
         player_data_list=player_data_list,
     )
 elif args.graph == "err-abs-mean":
@@ -640,6 +652,12 @@ if result:
     ):
         plt.xlim(0, 800)
         plt.ylim(0, 1)
+    if args.xlim:
+        x0, x1 = [float(v) for v in args.xlim.split(",", 1)]
+        plt.xlim(x0, x1)
+    if args.ylim:
+        y0, y1 = [float(v) for v in args.ylim.split(",", 1)]
+        plt.ylim(y0, y1)
     handles, labels = plt.gca().get_legend_handles_labels()
     sorted_pairs = sorted(zip(labels, handles), key=lambda x: x[0])
     labels, handles = zip(*sorted_pairs)
