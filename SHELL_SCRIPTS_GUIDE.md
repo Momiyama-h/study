@@ -95,6 +95,22 @@
   - ./training/run_make_board_data_from_dat.sh --run-name 20260123_0300__stage --seed-start 5 --seed-end 14 --ev-stages 9
   - ./training/run_make_board_data_from_dat.sh --run-name 20260123_0300__nostage --seed-start 5 --seed-end 14 --ev-stages 9 --nostage --overwrite
 
+### make_progress_counts.py
+- 目的: board_data の `state.txt` から progress 別の盤面数を集計し、CSV/グラフを出力
+- 入力: `board_data/<run_name>/seed*/NT*_*` 配下の `state.txt`
+- 出力:
+  - `analysis_outputs/<run_name>/progress_counts/`
+  - `progress_count_seedX_NT*_sym.csv` / `.png` (or `--ext pdf`)
+- 主な引数:
+  - --run-name NAME（必須）
+  - --board-root PATH（省略可、デフォルト: /HDD/momiyama2/data/study/board_data）
+  - --analysis-root PATH（省略可、デフォルト: /HDD/momiyama2/data/study/analysis_outputs）
+  - --format csv|plot|both（デフォルト: both）
+  - --ext png|pdf（デフォルト: png）
+  - --grid-y（横線グリッド）
+- 例:
+  - python3 ./training/make_progress_counts.py --run-name 20260129_2000_OI1200__stage --format both --grid-y
+
 ### run_plot_scores_stagecompare.sh
 - 目的: 学習ログから seed別のスコア推移グラフを出力
 - 入力: training_logs/<run_name>/seed<seed>/NT*_* の log_*.txt

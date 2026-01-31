@@ -48,6 +48,32 @@
 
 ---
 
+## 機能が被るスクリプト一覧（現状の整理）
+
+### 学習実行（学習のみ）
+- `run_train_unified.sh`
+- `run_train_only.sh`
+- `run_train_4patterns_10seeds_trainonly.sh`
+- `run_train_nt4a_trainonly.sh`
+- `run_train_nt5a_trainonly.sh`
+
+### 学習ログから平均/推移を作る
+- `plot_score_log_mean.py` / `run_plot_score_log_mean.sh`
+- `plot_score_log_mean_legacy.py` / `run_plot_score_log_mean_legacy.sh`
+- `plot_learning_curves.py`（別実装）
+
+### 既存 .dat / .txt から平均を作る（CSV）
+- `make_seed_score_matrix.py`（board_data or dat）
+- `run_eval_scores_from_dat.sh`（dat を再プレイ）
+- `export_score_averages.py` / `run_export_score_averages_for_run_name.sh`（学習ログ）
+
+### グラフ生成（board_data 由来）
+- `run_plot_scores_for_run_name.sh`
+- `run_plot_scores_stagecompare.sh`
+- `run_plot_and_summary.sh`
+
+---
+
 ## 出力ルールの統一（今後）
 - run_name は原則 `RUN_NAME_BASE + __{stage|nostage}`
 - seed 範囲は run_name に埋め込まず、引数で管理する
