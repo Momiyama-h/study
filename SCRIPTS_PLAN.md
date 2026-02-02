@@ -85,3 +85,34 @@
 - NT5a の **nostage-only** 対応は未定
 - stage/nostage を **1回の実行で混在させない** 安全運用を推奨
 - オプション追加が必要なら単体に集約する
+
+---
+
+## PP評価/相関まわりの変更メモ（今後の課題）
+
+### 変更すべき点
+1. **PP評価 exe の board_root 固定**
+   - `eval_state.cpp / eval_after_state.cpp` が `../board_data` 固定。
+   - `run_eval_pp_for_run_name.sh --board-root` が実質無効になり得る。
+   - → **board_root を引数 or 環境変数で渡せるようにする**のが必要。
+2. **PP評価の出力先の一貫性**
+   - 原則 **各 `seed/NT*_*/` 直下に `pp-eval-*.txt`** を置く運用。
+   - board_root ズレで別場所に出力されるリスクあり。
+3. **meta.json の `game_count` 欠落**
+   - structured path 解決に必要。欠落で PP 評価ファイルが見つからなくなる。
+   - → **meta.json に `game_count` を必須化**する。
+4. **命名の整合**
+   - `pp-eval-state.txt` の中身が “after-stateの4手評価” のため誤解要因。
+   - 互換優先なら据え置き、将来は整理推奨。
+
+### make_pp_corr_matrix.py 入出力の再検討
+**入力（優先順）**
+1. `seed/NT*_*/pp-eval-after-state.txt`（基本）
+2. `seed/NT*_*/eval-after-state.txt`（PP評価が同居の場合）
+3. `board_data/PP/game_counts{N}/seed{S}/eval-after-state-<safe_name>.txt`（fallback）
+4. `board_data/PP/eval-after-state-<safe_name>.txt`（旧式）
+
+**出力**
+- 既定: `analysis_outputs/<run_name>/pp_corr/pp_corr_spearman_after.csv`
+- 併記推奨: `pp_corr_spearman_state.csv`（eval-state版）
+- README で条件（seed/tuple/sym/game_count）を明文化すると査読向けに強い。
