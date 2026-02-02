@@ -267,6 +267,11 @@ arg_parser.add_argument(
     action="store_true",
     help="surv-mean-symdiff に標準偏差の帯を追加する。",
 )
+arg_parser.add_argument(
+    "--include-pp",
+    action="store_true",
+    help="surv-mean / surv-mean-symdiff に PP の平均曲線を追加する。",
+)
 file_group = arg_parser.add_mutually_exclusive_group()
 file_group.add_argument(
     "--exclude",
@@ -509,16 +514,19 @@ elif args.graph == "surv-mean":
 
     result = survival.calc_survival_mean_data(
         player_data_list=player_data_list,
+        include_pp=args.include_pp,
     )
 elif args.graph == "surv-mean-symdiff":
     output_name = args.output if args.output else "survival_mean_symdiff.pdf"
     if args.with_sd:
         result, sd_map = survival.calc_survival_mean_sd_data(
             player_data_list=player_data_list,
+            include_pp=args.include_pp,
         )
     else:
         result = survival.calc_survival_mean_data(
             player_data_list=player_data_list,
+            include_pp=args.include_pp,
         )
 elif args.graph == "surv-diff":
     output_name = args.output if args.output else "survival-diff.pdf"

@@ -66,8 +66,26 @@ def _calc_survival_curve(pd: PlayerData) -> GraphData:
     return _calc_survival_rate_from_file(pd.state_file)
 
 
+def _collect_pp_curves(player_data_list: list[PlayerData]) -> list[GraphData]:
+    pp_paths: dict[Path, None] = {}
+    for pd in player_data_list:
+        try:
+            pp_path = pd.pp_state_file
+        except FileNotFoundError:
+            continue
+        pp_paths[pp_path] = None
+    curves: list[GraphData] = []
+    for pp_path in pp_paths.keys():
+        try:
+            curves.append(_calc_survival_rate_from_file(pp_path))
+        except ValueError:
+            continue
+    return curves
+
+
 def calc_survival_mean_data(
     player_data_list: list[PlayerData],
+    include_pp: bool = False,
 ) -> PlotData:
     grouped: dict[
         tuple[int, str, int | None], list[tuple[PlayerData, GraphData]]
@@ -96,11 +114,20 @@ def calc_survival_mean_data(
         if stage is not None:
             label += f"_st{stage}"
         result.data[label] = GraphData(x=xs, y=ys)
+    if include_pp:
+        pp_curves = _collect_pp_curves(player_data_list)
+        if pp_curves:
+            min_len = min(len(c.x) for c in pp_curves)
+            if min_len > 0:
+                xs = list(range(min_len))
+                ys = [float(np.mean([c.y[i] for c in pp_curves])) for i in range(min_len)]
+                result.data["PP_mean"] = GraphData(x=xs, y=ys)
     return result
 
 
 def calc_survival_mean_sd_data(
     player_data_list: list[PlayerData],
+    include_pp: bool = False,
 ) -> tuple[PlotData, dict[str, GraphData]]:
     grouped: dict[
         tuple[int, str, int | None], list[tuple[PlayerData, GraphData]]
@@ -138,4 +165,18 @@ def calc_survival_mean_sd_data(
             label += f"_st{stage}"
         result.data[label] = GraphData(x=xs, y=ys)
         sd_map[label] = GraphData(x=xs, y=ysd)
+    if include_pp:
+        pp_curves = _collect_pp_curves(player_data_list)
+        if pp_curves:
+            min_len = min(len(c.x) for c in pp_curves)
+            if min_len > 0:
+                xs = list(range(min_len))
+                ys = []
+                ysd = []
+                for i in range(min_len):
+                    vals = [c.y[i] for c in pp_curves]
+                    ys.append(float(np.mean(vals)))
+                    ysd.append(float(np.std(vals, ddof=0)))
+                result.data["PP_mean"] = GraphData(x=xs, y=ys)
+                sd_map["PP_mean"] = GraphData(x=xs, y=ysd)
     return result, sd_map
