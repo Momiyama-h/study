@@ -29,6 +29,25 @@ def read_eval_values(path: Path) -> list[float]:
     return vals
 
 
+def read_eval_txt_max_values(path: Path) -> list[float]:
+    text = path.read_text("utf-8")
+    text = re.sub(r"game.*\n?", "", text)
+    vals: list[float] = []
+    for line in text.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        parts = line.split()
+        if len(parts) < 4:
+            continue
+        try:
+            evals = [float(parts[i]) for i in range(4)]
+        except ValueError:
+            continue
+        vals.append(max(evals))
+    return vals
+
+
 def rankdata(a: np.ndarray) -> np.ndarray:
     order = np.argsort(a, kind="mergesort")
     ranks = np.empty_like(order, dtype=float)
@@ -138,9 +157,9 @@ def main() -> int:
     ap.add_argument("--seed-end", type=int, default=None)
     ap.add_argument(
         "--eval-kind",
-        choices=("after", "state"),
+        choices=("after", "state", "eval"),
         default="after",
-        help="use eval-after-state (after) or eval-state (state)",
+        help="use eval-after-state (after), eval-state (state), or eval.txt max (eval)",
     )
     ap.add_argument("--output", default="")
     args = ap.parse_args()
@@ -152,14 +171,22 @@ def main() -> int:
 
     if args.eval_kind == "after":
         nt_eval_name = "eval-after-state.txt"
+        nt_eval_mode = "after"
         pp_eval_prefix = "eval-after-state"
         pp_local_name = "pp-eval-after-state.txt"
         suffix = "after"
-    else:
+    elif args.eval_kind == "state":
         nt_eval_name = "eval-state.txt"
+        nt_eval_mode = "state"
         pp_eval_prefix = "eval-state"
         pp_local_name = "pp-eval-state.txt"
         suffix = "state"
+    else:
+        nt_eval_name = "eval.txt"
+        nt_eval_mode = "eval"
+        pp_eval_prefix = "eval-after-state"
+        pp_local_name = "pp-eval-after-state.txt"
+        suffix = "evaltxt"
 
     tuple_filter = set()
     if args.tuples:
@@ -243,7 +270,10 @@ def main() -> int:
                 if not nt_eval_path.exists() or pp_eval_path is None:
                     row.extend([math.nan, math.nan])
                     continue
-                nt_vals = read_eval_values(nt_eval_path)
+                if nt_eval_mode == "eval":
+                    nt_vals = read_eval_txt_max_values(nt_eval_path)
+                else:
+                    nt_vals = read_eval_values(nt_eval_path)
                 pp_vals = read_eval_values(pp_eval_path)
                 rho, p = spearman_corr(pp_vals, nt_vals)
                 row.extend([rho, p])
