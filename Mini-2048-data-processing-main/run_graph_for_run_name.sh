@@ -73,9 +73,9 @@ if [[ -z "$RUN_NAME" || -z "$GRAPH" ]]; then
   echo "ERROR: --run-name and --graph are required." >&2
   exit 1
 fi
-if [[ "$GRAPH" == *"-mean" ]] || [[ "$GRAPH" == *"-mean-" ]] || [[ "$GRAPH" == "acc-mean-symdiff" ]]; then
-  COMBINE_SEEDS=1
-fi
+case "$GRAPH" in
+  *-mean*|surv-mean-symdiff) COMBINE_SEEDS=1;;
+esac
 if [[ "$GRAPH" == "acc-symdiff" || "$GRAPH" == "acc-mean-symdiff" || "$GRAPH" == "err-abs-symdiff" || "$GRAPH" == "err-abs-mean-symdiff" || "$GRAPH" == "err-rel-symdiff" || "$GRAPH" == "err-rel-mean-symdiff" || "$GRAPH" == "surv-mean-symdiff" || "$GRAPH" == "surv-symdiff" || "$GRAPH" == "evals-mean-symdiff" || "$GRAPH" == "scatter-symdiff" ]]; then
   SPLIT_SYM=0
 fi
