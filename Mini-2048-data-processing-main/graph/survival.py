@@ -97,3 +97,45 @@ def calc_survival_mean_data(
             label += f"_st{stage}"
         result.data[label] = GraphData(x=xs, y=ys)
     return result
+
+
+def calc_survival_mean_sd_data(
+    player_data_list: list[PlayerData],
+) -> tuple[PlotData, dict[str, GraphData]]:
+    grouped: dict[
+        tuple[int, str, int | None], list[tuple[PlayerData, GraphData]]
+    ] = {}
+    for pd in player_data_list:
+        info = tuple_sym_stage(pd)
+        if info is None:
+            continue
+        grouped.setdefault(info, []).append((pd, _calc_survival_curve(pd)))
+
+    result = PlotData(
+        x_label="progress",
+        y_label="survival rate mean",
+        data={},
+    )
+    sd_map: dict[str, GraphData] = {}
+    for (tuple_v, sym, stage), items in grouped.items():
+        if not items:
+            continue
+        curves = [c for _, c in items]
+        min_len = min(len(c.x) for c in curves)
+        if min_len == 0:
+            continue
+        xs = list(range(min_len))
+        ys = []
+        ysd = []
+        for i in range(min_len):
+            vals = [c.y[i] for c in curves]
+            mean = float(np.mean(vals))
+            sd = float(np.std(vals, ddof=0))
+            ys.append(mean)
+            ysd.append(sd)
+        label = f"NT{tuple_label(items[0][0], tuple_v)}_{sym}_mean"
+        if stage is not None:
+            label += f"_st{stage}"
+        result.data[label] = GraphData(x=xs, y=ys)
+        sd_map[label] = GraphData(x=xs, y=ysd)
+    return result, sd_map

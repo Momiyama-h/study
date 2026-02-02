@@ -21,7 +21,7 @@ from . import (
     evals,
     progress_eval_accuracy,
 )
-from .common import PlayerData, board_dir, BASE_DIR, make_safe_name
+from .common import PlayerData, GraphData, board_dir, BASE_DIR, make_safe_name
 __version__ = "1.5.0"
 
 try:
@@ -262,6 +262,11 @@ arg_parser.add_argument(
     default=None,
     help="scatter用のサンプル数（0以下なら全件）",
 )
+arg_parser.add_argument(
+    "--with-sd",
+    action="store_true",
+    help="surv-mean-symdiff に標準偏差の帯を追加する。",
+)
 file_group = arg_parser.add_mutually_exclusive_group()
 file_group.add_argument(
     "--exclude",
@@ -372,6 +377,7 @@ output_dir.mkdir(parents=True, exist_ok=True)
 config_path = BASE_DIR / "config.json"
 config = get_config(board_data_dirs)
 player_data_list = get_files(config, board_data_dirs)
+sd_map: dict[str, GraphData] = {}
 
 def infer_scatter_output_name(player_data_list: list[PlayerData]) -> str | None:
     """Infer output name from board_data layout when a single target is used."""
@@ -506,10 +512,14 @@ elif args.graph == "surv-mean":
     )
 elif args.graph == "surv-mean-symdiff":
     output_name = args.output if args.output else "survival_mean_symdiff.pdf"
-
-    result = survival.calc_survival_mean_data(
-        player_data_list=player_data_list,
-    )
+    if args.with_sd:
+        result, sd_map = survival.calc_survival_mean_sd_data(
+            player_data_list=player_data_list,
+        )
+    else:
+        result = survival.calc_survival_mean_data(
+            player_data_list=player_data_list,
+        )
 elif args.graph == "surv-diff":
     output_name = args.output if args.output else "survival-diff.pdf"
 
@@ -653,7 +663,20 @@ if result:
         ) and "label" not in k_config:
             k_config = dict(k_config)
             k_config["label"] = k
-        plt.plot(v.x, v.y, **k_config)
+        line = plt.plot(v.x, v.y, **k_config)[0]
+        if args.graph == "surv-mean-symdiff" and args.with_sd:
+            sd_curve = sd_map.get(k)
+            if sd_curve and len(sd_curve.y) == len(v.y):
+                lower = [max(0.0, m - s) for m, s in zip(v.y, sd_curve.y)]
+                upper = [min(1.0, m + s) for m, s in zip(v.y, sd_curve.y)]
+                plt.fill_between(
+                    v.x,
+                    lower,
+                    upper,
+                    color=line.get_color(),
+                    alpha=0.2,
+                    linewidth=0,
+                )
 
     if args.graph in (
         "surv",
