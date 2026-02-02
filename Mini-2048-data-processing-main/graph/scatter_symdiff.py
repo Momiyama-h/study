@@ -75,6 +75,7 @@ def plot_scatter_symdiff(
     output: Path,
     is_show: bool = True,
     sample_size: int | None = None,
+    y_label: str | None = None,
 ):
     """
     同一seed・同一タプルのsym/notsymを同じ散布図に重ねて描画する。
@@ -104,7 +105,7 @@ def plot_scatter_symdiff(
             _plot_regression(xs, ys, color=color, label=f"{sym} fit")
 
         plt.xlabel("perfect")
-        plt.ylabel("player")
+        plt.ylabel(y_label if y_label else "player")
         plt.legend()
         plt.tight_layout()
 

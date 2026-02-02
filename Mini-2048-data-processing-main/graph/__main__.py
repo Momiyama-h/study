@@ -263,6 +263,12 @@ arg_parser.add_argument(
     help="scatter用のサンプル数（0以下なら全件）",
 )
 arg_parser.add_argument(
+    "--y-label",
+    type=str,
+    default="",
+    help="scatter系のy軸ラベルを指定する（例: NT4player）",
+)
+arg_parser.add_argument(
     "--with-sd",
     action="store_true",
     help="surv-mean-symdiff に標準偏差の帯を追加する。",
@@ -555,11 +561,13 @@ elif args.graph == "scatter":
         inferred = infer_scatter_output_name(player_data_list)
         output_name = inferred if inferred else "scatter.pdf"
 
+    y_label = args.y_label if args.y_label else None
     result = scatter.plot_scatter(
         player_data_list=player_data_list,
         output=output_dir / output_name,
         is_show=args.is_show,
         sample_size=args.sample_size,
+        y_label=y_label,
     )
 elif args.graph == "scatter_v2":
     if args.output:
@@ -577,11 +585,13 @@ elif args.graph == "scatter_v2":
 elif args.graph == "scatter-symdiff":
     output_name = args.output if args.output else "scatter_symdiff.pdf"
 
+    y_label = args.y_label if args.y_label else None
     result = scatter_symdiff.plot_scatter_symdiff(
         player_data_list=player_data_list,
         output=output_dir / output_name,
         is_show=args.is_show,
         sample_size=args.sample_size,
+        y_label=y_label,
     )
 elif args.graph == "evals":
     output_name = args.output if args.output else "evals.pdf"

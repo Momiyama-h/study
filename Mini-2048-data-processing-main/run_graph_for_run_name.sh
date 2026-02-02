@@ -23,6 +23,7 @@ Options:
   --sample-size N      scatter sample size (<=0 means all points)
   --with-sd            (surv-mean-symdiff only) draw mean±SD band
   --include-pp         (surv-mean / surv-mean-symdiff) include PP mean curve
+  --y-label LABEL      scatter系のy軸ラベルを指定（例: NT4player）
 USAGE
 }
 
@@ -45,6 +46,7 @@ WITH_SD=0
 PASS_WITH_SD=0
 INCLUDE_PP=0
 PASS_INCLUDE_PP=0
+Y_LABEL=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -64,6 +66,7 @@ while [[ $# -gt 0 ]]; do
     --sample-size) SAMPLE_SIZE="$2"; shift 2;;
     --with-sd) WITH_SD=1; shift;;
     --include-pp) INCLUDE_PP=1; shift;;
+    --y-label) Y_LABEL="$2"; shift 2;;
     -h|--help) usage; exit 0;;
     *) echo "Unknown option: $1"; usage; exit 1;;
   esac
@@ -149,6 +152,9 @@ PY
   fi
   if [ "$PASS_INCLUDE_PP" -eq 1 ]; then
     cmd+=(--include-pp)
+  fi
+  if [ -n "$Y_LABEL" ]; then
+    cmd+=(--y-label "$Y_LABEL")
   fi
   if [ -n "$X_LIM" ]; then
     cmd+=(--xlim "$X_LIM")

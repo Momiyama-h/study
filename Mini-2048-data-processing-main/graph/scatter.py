@@ -22,6 +22,7 @@ def plot_scatter(
     output: Path,
     is_show: bool = True,
     sample_size: int | None = None,
+    y_label: str | None = None,
 ):
     """
     パーフェクトプレイヤとプレイヤーの評価値の散布図をプロットする。
@@ -73,7 +74,7 @@ def plot_scatter(
             linestyle="dashed",
         )
         plt.xlabel("perfect")
-        plt.ylabel(pd.config.get("label", pd.name))
+        plt.ylabel(y_label if y_label else pd.config.get("label", pd.name))
         plt.tight_layout()
         save_path = output.with_stem(f"{output.stem}_{pd.name}")
         plt.savefig(save_path)
