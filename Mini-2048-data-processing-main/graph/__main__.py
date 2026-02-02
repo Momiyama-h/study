@@ -693,12 +693,13 @@ if result:
         y0, y1 = [float(v) for v in args.ylim.split(",", 1)]
         plt.ylim(y0, y1)
     handles, labels = plt.gca().get_legend_handles_labels()
-    sorted_pairs = sorted(zip(labels, handles), key=lambda x: x[0])
-    labels, handles = zip(*sorted_pairs)
+    if handles and labels:
+        sorted_pairs = sorted(zip(labels, handles), key=lambda x: x[0])
+        labels, handles = zip(*sorted_pairs)
+        plt.legend(handles, labels)  # ソート後の順番で凡例を設定
 
     plt.xlabel(result.x_label)
     plt.ylabel(result.y_label)
-    plt.legend(handles, labels)  # ソート後の順番で凡例を設定
     plt.tight_layout()  # 追加：はみ出しを防ぐ
     plt.savefig(output_dir / output_name)
     if args.is_show:

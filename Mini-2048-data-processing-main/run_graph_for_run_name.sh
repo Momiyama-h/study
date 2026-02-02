@@ -21,6 +21,7 @@ Options:
   --sym-list LIST      comma-separated sym list (default: sym,notsym)
   --parallel N         max parallel jobs (default: nproc)
   --sample-size N      scatter sample size (<=0 means all points)
+  --with-sd            (surv-mean-symdiff only) draw mean±SD band
 USAGE
 }
 
@@ -39,6 +40,8 @@ SYM_LIST="sym,notsym"
 PARALLEL="$(nproc)"
 SAMPLE_SIZE=""
 SPLIT_SYM=1
+WITH_SD=0
+PASS_WITH_SD=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -56,6 +59,7 @@ while [[ $# -gt 0 ]]; do
     --sym-list) SYM_LIST="$2"; shift 2;;
     --parallel) PARALLEL="$2"; shift 2;;
     --sample-size) SAMPLE_SIZE="$2"; shift 2;;
+    --with-sd) WITH_SD=1; shift;;
     -h|--help) usage; exit 0;;
     *) echo "Unknown option: $1"; usage; exit 1;;
   esac
@@ -70,6 +74,13 @@ if [[ "$GRAPH" == *"-mean" ]] || [[ "$GRAPH" == *"-mean-" ]] || [[ "$GRAPH" == "
 fi
 if [[ "$GRAPH" == "acc-symdiff" || "$GRAPH" == "acc-mean-symdiff" || "$GRAPH" == "err-abs-symdiff" || "$GRAPH" == "err-abs-mean-symdiff" || "$GRAPH" == "err-rel-symdiff" || "$GRAPH" == "err-rel-mean-symdiff" || "$GRAPH" == "surv-mean-symdiff" || "$GRAPH" == "surv-symdiff" || "$GRAPH" == "evals-mean-symdiff" || "$GRAPH" == "scatter-symdiff" ]]; then
   SPLIT_SYM=0
+fi
+if [ "$WITH_SD" -eq 1 ]; then
+  if [ "$GRAPH" = "surv-mean-symdiff" ]; then
+    PASS_WITH_SD=1
+  else
+    echo "WARNING: --with-sd is only supported for surv-mean-symdiff; ignoring." >&2
+  fi
 fi
 
 if [[ -z "$OUTPUT_NAME" ]]; then
@@ -121,6 +132,9 @@ PY
     --output "$output_file" --output-dir "$out_dir")
   if [ -n "$SAMPLE_SIZE" ]; then
     cmd+=(--sample-size "$SAMPLE_SIZE")
+  fi
+  if [ "$PASS_WITH_SD" -eq 1 ]; then
+    cmd+=(--with-sd)
   fi
   if [ -n "$X_LIM" ]; then
     cmd+=(--xlim "$X_LIM")
