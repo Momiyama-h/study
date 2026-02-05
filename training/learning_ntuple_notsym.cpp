@@ -75,10 +75,18 @@ static string run_name;
 
 static double eval_board(const int* board) {
   CpuAccum acc(cpu_ns_eval_block);
+#ifdef SEARCH_POLICY_EXPECTIMAX
+#if defined(USE_4TUPLE) || defined(NT4A)
+  return calcEvSafe(board);
+#else
+  return NT6_notsym::calcEvSafe(board);
+#endif
+#else
 #if defined(USE_4TUPLE) || defined(NT4A)
   return calcEv(board);
 #else
   return NT6_notsym::calcEv(board);
+#endif
 #endif
 }
 

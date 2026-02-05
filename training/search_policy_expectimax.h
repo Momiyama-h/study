@@ -71,22 +71,19 @@ static inline void clear_expectimax_cache() {
   }
 }
 
-static inline double move_value(const state_t& state, int depth, EvalFn eval_fn,
-                                bool use_sym_cache);
-static inline double chance_value(const state_t& state, int depth, EvalFn eval_fn,
+static inline double move_expand(const state_t& state, int depth, EvalFn eval_fn,
+                                 bool use_sym_cache);
+static inline double input_expand(const state_t& state, int depth, EvalFn eval_fn,
                                   bool use_sym_cache);
 
-static inline double move_value(const state_t& state, int depth, EvalFn eval_fn,
-                                bool use_sym_cache) {
-  if (depth <= 0) {
-    return eval_fn(state.board);
-  }
+static inline double move_expand(const state_t& state, int depth, EvalFn eval_fn,
+                                 bool use_sym_cache) {
   depth--;
   double max_v = -DBL_MAX;
   state_t copy;
   for (int d = 0; d < 4; d++) {
     if (play(d, state, &copy)) {
-      double v = chance_value(copy, depth, eval_fn, use_sym_cache) +
+      double v = input_expand(copy, depth, eval_fn, use_sym_cache) +
                  EXPECTIMAX_REWARD_WEIGHT * (copy.score - state.score);
       if (v > max_v) {
         max_v = v;
@@ -99,12 +96,8 @@ static inline double move_value(const state_t& state, int depth, EvalFn eval_fn,
   return max_v;
 }
 
-static inline double chance_value(const state_t& state, int depth, EvalFn eval_fn,
+static inline double input_expand(const state_t& state, int depth, EvalFn eval_fn,
                                   bool use_sym_cache) {
-  if (depth <= 0) {
-    return eval_fn(state.board);
-  }
-  depth--;
   auto& cache = expectimax_cache();
   const long long key = board_to_index(state.board, use_sym_cache);
   if (depth >= 0) {
@@ -113,6 +106,10 @@ static inline double chance_value(const state_t& state, int depth, EvalFn eval_f
       return it->second;
     }
   }
+  if (depth == 0) {
+    cache[depth][key] = eval_fn(state.board);
+    return cache[depth][key];
+  }
 
   double sum = 0.0;
   int count = 0;
@@ -120,9 +117,9 @@ static inline double chance_value(const state_t& state, int depth, EvalFn eval_f
   for (int i = 0; i < 9; i++) {
     if (copy.board[i] == 0) {
       copy.board[i] = 1;
-      sum += move_value(copy, depth, eval_fn, use_sym_cache) * 9.0;
+      sum += move_expand(copy, depth, eval_fn, use_sym_cache) * 9.0;
       copy.board[i] = 2;
-      sum += move_value(copy, depth, eval_fn, use_sym_cache);
+      sum += move_expand(copy, depth, eval_fn, use_sym_cache);
       copy.board[i] = 0;
       count += 1;
     }
@@ -143,14 +140,23 @@ static inline int select_move(const state_t& state, EvalFn eval_fn,
   for (int d = 0; d < 4; d++) {
     evals_out[d] = -1.0e10;
   }
-  const int depth = (EXPECTIMAX_PLY > 0) ? (EXPECTIMAX_PLY - 1) : 0;
+  const int depth = (EXPECTIMAX_PLY > 0) ? EXPECTIMAX_PLY : 1;
+  move_expand(state, depth, eval_fn, use_sym_cache);
+
   double max_v = -DBL_MAX;
   int selected = -1;
   state_t copy;
   for (int d = 0; d < 4; d++) {
     if (play(d, state, &copy)) {
-      double v = chance_value(copy, depth, eval_fn, use_sym_cache) +
-                 EXPECTIMAX_REWARD_WEIGHT * (copy.score - state.score);
+      const long long key = board_to_index(copy.board, use_sym_cache);
+      double v = -DBL_MAX;
+      if (depth - 1 >= 0) {
+        auto it = expectimax_cache()[depth - 1].find(key);
+        if (it != expectimax_cache()[depth - 1].end()) {
+          v = it->second;
+        }
+      }
+      v += EXPECTIMAX_REWARD_WEIGHT * (copy.score - state.score);
       evals_out[d] = v;
       if (v > max_v) {
         max_v = v;

@@ -89,7 +89,11 @@ static string run_name;
 
 static double eval_board(const int* board) {
   CpuAccum acc(cpu_ns_eval_block);
+#ifdef SEARCH_POLICY_EXPECTIMAX
+  return calcEvSafe(board);
+#else
   return calcEv(board);
+#endif
 }
 
 // 特定のタプルの特定の盤面状態を記録する設定
