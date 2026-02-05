@@ -190,6 +190,34 @@ python3 analysis/make_train_eval_score_matrix.py \
 - `board_data/<run_name>/score_train_eval_matrix.csv`
 - `board_data/<run_name>/score_train_eval_matrix_long.csv`（`--long` 時）
 
+### make_unique_board_stats.py
+seedごとの **ユニーク盤面数** と **最大タイル到達割合** をCSVに出力。  
+eval_seed 層がある場合は eval_seed ごとに集計して **平均±SD** を出す。
+
+実行例:
+```
+python3 analysis/make_unique_board_stats.py \
+  --run-name 20260129_2000_OI1200__stage \
+  --board-root /HDD/momiyama2/data/study/board_data \
+  --train-seed-start 5 --train-seed-end 14 \
+  --eval-seed-start 5 --eval-seed-end 14 \
+  --tuples 4,5,6 --sym-list sym,notsym
+```
+正規化指標（unique/total_states）も出す場合:
+```
+python3 analysis/make_unique_board_stats.py \
+  --run-name 20260129_2000_OI1200__stage \
+  --board-root /HDD/momiyama2/data/study/board_data \
+  --train-seed-start 5 --train-seed-end 14 \
+  --eval-seed-start 5 --eval-seed-end 14 \
+  --tuples 4,5,6 --sym-list sym,notsym \
+  --normalize
+```
+出力:
+- `analysis_outputs/<run_name>/board_stats/unique_board_count_seed.csv`
+- `analysis_outputs/<run_name>/board_stats/max_tile_prob_seed.csv`
+- `analysis_outputs/<run_name>/board_stats/unique_board_count_nt_sym_mean.csv`
+
 ## Expectimax - `Expectimax/`
 
 ### play_expectimax.cpp
