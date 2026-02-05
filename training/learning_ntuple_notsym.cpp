@@ -73,6 +73,20 @@ static std::chrono::steady_clock::time_point block_wall_start;
 static fs::path output_dir;
 static string run_name;
 
+static inline uint64_t now_cpu_ns_process()
+{
+  timespec ts{};
+  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &ts);
+  return (uint64_t)ts.tv_sec * 1000000000ull + (uint64_t)ts.tv_nsec;
+}
+
+struct CpuAccum {
+  uint64_t &acc;
+  uint64_t st;
+  explicit CpuAccum(uint64_t &a) : acc(a), st(now_cpu_ns_process()) {}
+  ~CpuAccum() { acc += (now_cpu_ns_process() - st); }
+};
+
 static double eval_board(const int* board) {
   CpuAccum acc(cpu_ns_eval_block);
 #ifdef SEARCH_POLICY_EXPECTIMAX
@@ -88,13 +102,6 @@ static double eval_board(const int* board) {
   return NT6_notsym::calcEv(board);
 #endif
 #endif
-}
-
-static inline uint64_t now_cpu_ns_process()
-{
-  timespec ts{};
-  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &ts);
-  return (uint64_t)ts.tv_sec * 1000000000ull + (uint64_t)ts.tv_nsec;
 }
 
 struct CpuAccum {
