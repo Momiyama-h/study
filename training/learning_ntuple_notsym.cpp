@@ -104,13 +104,6 @@ static double eval_board(const int* board) {
 #endif
 }
 
-struct CpuAccum {
-  uint64_t &acc;
-  uint64_t st;
-  explicit CpuAccum(uint64_t &a) : acc(a), st(now_cpu_ns_process()) {}
-  ~CpuAccum() { acc += (now_cpu_ns_process() - st); }
-};
-
 // 追跡するタプルIDを指定（必要に応じて変更）
 #if defined(USE_4TUPLE) || defined(NT4A)
 static constexpr int TRACKED_TUPLE_ID[] = {0, 3, 6, 9, 12, 15, 18, 21};
