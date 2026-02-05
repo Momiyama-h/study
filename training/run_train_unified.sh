@@ -160,8 +160,8 @@ for stage_mode in $(echo "$STAGE_MODE" | sed 's/both/stage nostage/'); do
     case "$tuple" in
       4)
         if [[ "$NT4A" -eq 1 ]]; then
-          compile_train "$BASE_MINI/learning_ntuple_sym.cpp" "$BASE_MINI/learn_4sym${bin_suffix}" "-DUSE_4TUPLE -DNT4A $train_flags"
-          compile_train "$BASE_MINI/learning_ntuple_notsym.cpp" "$BASE_MINI/learn_4notsym${bin_suffix}" "-DUSE_4TUPLE -DNT4A $train_flags"
+          compile_train "$BASE_MINI/learning_ntuple_sym.cpp" "$BASE_MINI/learn_4sym_nt4a${bin_suffix}" "-DUSE_4TUPLE -DNT4A $train_flags"
+          compile_train "$BASE_MINI/learning_ntuple_notsym.cpp" "$BASE_MINI/learn_4notsym_nt4a${bin_suffix}" "-DUSE_4TUPLE -DNT4A $train_flags"
         else
           compile_train "$BASE_MINI/learning_ntuple_sym.cpp" "$BASE_MINI/learn_4sym${bin_suffix}" "-DUSE_4TUPLE $train_flags"
           compile_train "$BASE_MINI/learning_ntuple_notsym.cpp" "$BASE_MINI/learn_4notsym${bin_suffix}" "-DUSE_4TUPLE $train_flags"
@@ -185,10 +185,15 @@ for stage_mode in $(echo "$STAGE_MODE" | sed 's/both/stage nostage/'); do
   JOBS=0
   for seed in "${SEEDS[@]}"; do
     for tuple in "${TUPLES[@]}"; do
-      case "$tuple" in
-        4)
-          spawn_job 4 sym "$BASE_MINI/learn_4sym${bin_suffix}" "$seed" "$stage_tag" "$run_name"
-          spawn_job 4 notsym "$BASE_MINI/learn_4notsym${bin_suffix}" "$seed" "$stage_tag" "$run_name"
+    case "$tuple" in
+      4)
+          if [[ "$NT4A" -eq 1 ]]; then
+            spawn_job 4 sym "$BASE_MINI/learn_4sym_nt4a${bin_suffix}" "$seed" "$stage_tag" "$run_name"
+            spawn_job 4 notsym "$BASE_MINI/learn_4notsym_nt4a${bin_suffix}" "$seed" "$stage_tag" "$run_name"
+          else
+            spawn_job 4 sym "$BASE_MINI/learn_4sym${bin_suffix}" "$seed" "$stage_tag" "$run_name"
+            spawn_job 4 notsym "$BASE_MINI/learn_4notsym${bin_suffix}" "$seed" "$stage_tag" "$run_name"
+          fi
           ;;
         5)
           spawn_job 5 sym "$BASE_MINI/learn_5sym${bin_suffix}" "$seed" "$stage_tag" "$run_name"
