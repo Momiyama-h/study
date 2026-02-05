@@ -15,6 +15,10 @@
 ```
 g++ Play_NT_player.cpp -O2 -std=c++20 -o play_nt
 ```
+Expectimax 版でコンパイル（3-ply, move→tile→move）:
+```
+g++ Play_NT_player.cpp -O2 -std=c++20 -DSEARCH_POLICY_EXPECTIMAX -DEXPECTIMAX_PLY=3 -o play_nt_expecti
+```
 実行:
 ```
 ./play_nt <seed> <game_counts> <evfile> [sym|notsym] [4|6]
@@ -27,11 +31,17 @@ g++ Play_NT_player.cpp -O2 -std=c++20 -o play_nt
 - `sym|notsym` や `4|6` を省略すると `evfile` 名から推定します。
 - 学習側を `-DSINGLE_STAGE` でビルドした .dat を使う場合は、評価側も `-DSINGLE_STAGE` を付けてください。
   例: `g++ Play_NT_player.cpp -O2 -std=c++20 -DSINGLE_STAGE -o play_nt_ns`
+- Expectimax 版では `eval.txt` に「期待値」が記録されます（Greedy の場合は従来通り 1 手評価）。
+- 報酬重みを変える場合は `-DEXPECTIMAX_REWARD_WEIGHT=1.0` を付与します。
 
 ### Play_NT_player_notsym.cpp（旧版）
 コンパイル:
 ```
 g++ Play_NT_player_notsym.cpp -O2 -std=c++20 -o play_nt_notsym
+```
+Expectimax 版でコンパイル（3-ply）:
+```
+g++ Play_NT_player_notsym.cpp -O2 -std=c++20 -DSEARCH_POLICY_EXPECTIMAX -DEXPECTIMAX_PLY=3 -o play_nt_notsym_expecti
 ```
 実行:
 ```

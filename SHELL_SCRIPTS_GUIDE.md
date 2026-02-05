@@ -35,11 +35,15 @@
   - --seed-start / --seed-end / --seeds
   - --tuples "4 5 6"（任意の組み合わせ）
   - --parallel / --stdout-log / --init-ev
+  - --policy greedy|expecti3（デフォルト: greedy）
 - 出力:
   - .dat: /HDD/momiyama2/data/study/ntuple_dat/<run_name>/seed<seed>/NT{4|5|6}_{sym|notsym}/
   - log: /HDD/momiyama2/data/study/training_logs/<run_name>/seed<seed>/NT{4|5|6}_{sym|notsym}/
+- 補足:
+  - `--policy expecti3` を指定すると `run_name` に `__policy=expecti3` が自動付与されます。
 - 例:
   - ./training/run_train_unified.sh --run-name-base 20260128_2000_OI1200 --stage-mode stage --seed-start 10 --seed-end 14 --tuples "4 5 6" --parallel 8
+  - ./training/run_train_unified.sh --run-name-base 20260128_2000_OI1200 --policy expecti3 --stage-mode nostage --seed-start 5 --seed-end 5 --tuples "4" --parallel 1
 
 ### run_train_only.sh
 - 目的: 学習のみをまとめて実行するラッパー（NT4/NT6、必要ならNT5a）

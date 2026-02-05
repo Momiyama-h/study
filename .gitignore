@@ -61,3 +61,6 @@ Mini-2048-data-processing-main/graph/config.json.lock
 # training outputs (large logs)
 training/mini2048_outputs/
 2048_3x3_analysis-main/*
+
+# to report fig_plot directorys
+fig_plot/*

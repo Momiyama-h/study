@@ -20,7 +20,8 @@
   - 5 → NT5a（nostage-only は不可）
 - `--stage-mode` で stage/nostage/both を決定
 - `--seed-start/--seed-end` または `--seeds` で seed 範囲を決定
-- run_name は `RUN_NAME_BASE + __stage / __nostage`
+- `--policy` で Greedy / Expectimax を決定（`greedy` / `expecti3`）
+- run_name は `RUN_NAME_BASE + __stage / __nostage`（Expectimax の場合は `__policy=expecti3` を付与）
 
 **出力**
 - .dat:
@@ -59,18 +60,18 @@
 
 ### 学習ログから平均/推移を作る
 - `plot_score_log_mean.py` / `run_plot_score_log_mean.sh`
-- `plot_score_log_mean_legacy.py` / `run_plot_score_log_mean_legacy.sh`
+  - 学習中の `log_score_*.csv` を集計し、update/cpu 軸の平均推移を出力
 - `plot_learning_curves.py`（別実装）
+  - 旧形式や別可視化（用途が被る場合は段階的に整理）
 
 ### 既存 .dat / .txt から平均を作る（CSV）
 - `make_seed_score_matrix.py`（board_data or dat）
 - `run_eval_scores_from_dat.sh`（dat を再プレイ）
 - `export_score_averages.py` / `run_export_score_averages_for_run_name.sh`（学習ログ）
 
-### グラフ生成（board_data 由来）
+### グラフ生成（training_logs 由来）
 - `run_plot_scores_for_run_name.sh`
-- `run_plot_scores_stagecompare.sh`
-- `run_plot_and_summary.sh`
+  - `training_logs/<run>/seed*/NT*_*/log_*tuple_*_seed*.txt` から sym/notsym 比較を作図
 
 ---
 

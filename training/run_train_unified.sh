@@ -14,6 +14,7 @@ STAGE_MODE="${STAGE_MODE:-stage}"
 TUPLES_STR="${TUPLES:-4 5 6}"
 PARALLEL="${PARALLEL:-8}"
 STDOUT_LOG="${STDOUT_LOG:-0}"
+POLICY="${POLICY:-greedy}"
 INIT_EV="${INIT_EV:-}"
 NT4A="${NT4A:-0}"
 
@@ -31,6 +32,7 @@ Options:
   --tuples "LIST"        tuple sizes (default: "4 5 6")
   --parallel N           max parallel jobs (default: 8)
   --stdout-log 0|1       enable stdout log in training (default: 0)
+  --policy MODE          greedy|expecti3 (default: greedy)
   --init-ev N            optimistic init value (INIT_EV)
   --nt4a                 use NT4a tuple set when tuple=4
   -h, --help             show help
@@ -51,6 +53,7 @@ while [[ $# -gt 0 ]]; do
     --tuples) TUPLES_STR="$2"; shift 2;;
     --parallel) PARALLEL="$2"; shift 2;;
     --stdout-log) STDOUT_LOG="$2"; shift 2;;
+    --policy) POLICY="$2"; shift 2;;
     --init-ev) INIT_EV="$2"; shift 2;;
     --nt4a) NT4A=1; shift;;
     -h|--help) usage; exit 0;;
@@ -71,6 +74,17 @@ case "$STAGE_MODE" in
   stage|nostage|both) ;;
   *) echo "ERROR: invalid --stage-mode: $STAGE_MODE (use stage|nostage|both)" >&2; exit 1;;
  esac
+
+case "$POLICY" in
+  greedy) policy_flags="";;
+  expecti3) policy_flags="-DSEARCH_POLICY_EXPECTIMAX -DEXPECTIMAX_PLY=3";;
+  *) echo "ERROR: invalid --policy: $POLICY (use greedy|expecti3)" >&2; exit 1;;
+ esac
+if [[ "$POLICY" == "expecti3" ]]; then
+  if [[ "$RUN_NAME_BASE" != *"__policy="* ]]; then
+    RUN_NAME_BASE="${RUN_NAME_BASE}__policy=expecti3"
+  fi
+fi
 
 TUPLES_STR="${TUPLES_STR//,/ }"
 read -r -a TUPLES <<< "$TUPLES_STR"
@@ -125,12 +139,12 @@ for stage_mode in $(echo "$STAGE_MODE" | sed 's/both/stage nostage/'); do
   case "$stage_mode" in
     stage)
       stage_tag="stage"
-      train_flags="-DENABLE_CSV_LOG=1 -DENABLE_STDOUT_LOG=${STDOUT_LOG}"
+      train_flags="${policy_flags} -DENABLE_CSV_LOG=1 -DENABLE_STDOUT_LOG=${STDOUT_LOG}"
       bin_suffix="_st"
       ;;
     nostage)
       stage_tag="nostage"
-      train_flags="-DSINGLE_STAGE -DENABLE_CSV_LOG=1 -DENABLE_STDOUT_LOG=${STDOUT_LOG}"
+      train_flags="-DSINGLE_STAGE ${policy_flags} -DENABLE_CSV_LOG=1 -DENABLE_STDOUT_LOG=${STDOUT_LOG}"
       bin_suffix="_ns"
       ;;
     *)

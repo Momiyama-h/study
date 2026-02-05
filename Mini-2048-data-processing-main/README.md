@@ -15,6 +15,7 @@ perfect_player はメモリ不足が懸念されるので、サーバで動か�
 
 4tuple_data_9.dat のような各タプルの学習済みファイルが必要です。
 詳しい内容は[この README](./NT/README.md)を確認してください。
+Expectimax 版のビルド（`-DSEARCH_POLICY_EXPECTIMAX`）も NT/README に記載しています。
 
 ## 一括実行（scatter）
 

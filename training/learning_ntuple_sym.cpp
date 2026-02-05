@@ -27,6 +27,7 @@ namespace fs = std::filesystem;
 #else
 #include "6tuples_sym.h"
 #endif
+#include "search_policy.h"
 
 #ifndef STORAGE_FREQUENCY
 #define STORAGE_FREQUENCY (5*10000000LL)
@@ -85,6 +86,11 @@ struct CpuAccum {
 };
 static fs::path output_dir;
 static string run_name;
+
+static double eval_board(const int* board) {
+  CpuAccum acc(cpu_ns_eval_block);
+  return calcEv(board);
+}
 
 // 特定のタプルの特定の盤面状態を記録する設定
 #define TRACKED_TUPLE_ID 0  // 追跡するタプルID
@@ -261,6 +267,12 @@ int main(int argc, char* argv[])
   }
   global_seed = atoi(argv[1]);
   run_name = argv[2];
+
+#ifdef SEARCH_POLICY_EXPECTIMAX
+  if (run_name.find("__policy=") == string::npos) {
+    run_name += "__policy=expecti3";
+  }
+#endif
   srand(global_seed);
 
   double init_ev = 0.0;
@@ -313,23 +325,13 @@ int main(int argc, char* argv[])
     int lastboard[9] = {0};
     while (true) { // ゲームのループ
       turn++;
-      state_t copy;
+      double evals[4];
+      int selected = select_move(state, eval_board, evals, true);
       double max_ev_r = -DBL_MAX;
-      int selected = -1;
       for (int d = 0; d < 4; d++) {
-	if (play(d, state, &copy)) {
-	  double ev_r = 0.0;
-	  {
-	    CpuAccum acc(cpu_ns_eval_block);
-	    ev_r = calcEv(copy.board) + (copy.score - state.score);
-	  }
-	  if (ev_r > max_ev_r) {
-	    max_ev_r = ev_r;
-	    selected = d;
-	  }
-	  // printf("d=%d, ev_r=%f, max_ev_r=%f\n",
-	  // 	 d, ev_r, max_ev_r);
-	}
+        if (evals[d] > max_ev_r) {
+          max_ev_r = evals[d];
+        }
       }
       // state.print();
       // printf("selected = %d\n", selected);

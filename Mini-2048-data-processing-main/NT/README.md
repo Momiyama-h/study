@@ -15,6 +15,11 @@ Play_NT_player.cpp を動かします
 g++ Play_NT_player.cpp -std=c++20
 ```
 
+Expectimax 版（3-ply, move→tile→move）でビルドする場合:
+```bash
+g++ Play_NT_player.cpp -std=c++20 -DSEARCH_POLICY_EXPECTIMAX -DEXPECTIMAX_PLY=3 -o play_nt_expecti
+```
+
 ```bash
 ./a.out seed ゲーム数 評価ファイル
 ```
@@ -26,6 +31,7 @@ g++ Play_NT_player.cpp -std=c++20
 ```
 
 このように動かせば動きます。評価ファイルの先頭を参照してタプルを選んでいますので、評価ファイルの名前を変更する際は注意してください。
+Expectimax 版の場合、`eval.txt` に記録される評価値は「期待値」になります。
 
 ### SINGLE_STAGE（マルチステージ無効）で使う場合
 

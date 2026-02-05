@@ -27,6 +27,7 @@ namespace fs = std::filesystem;
 #else
 #include "6tuples_notsym.h"
 #endif
+#include "search_policy.h"
 
 #ifndef STORAGE_FREQUENCY
 #define STORAGE_FREQUENCY (5*10000000LL)
@@ -71,6 +72,15 @@ static std::chrono::steady_clock::time_point process_wall_start;
 static std::chrono::steady_clock::time_point block_wall_start;
 static fs::path output_dir;
 static string run_name;
+
+static double eval_board(const int* board) {
+  CpuAccum acc(cpu_ns_eval_block);
+#if defined(USE_4TUPLE) || defined(NT4A)
+  return calcEv(board);
+#else
+  return NT6_notsym::calcEv(board);
+#endif
+}
 
 static inline uint64_t now_cpu_ns_process()
 {
@@ -331,6 +341,12 @@ int main(int argc, char* argv[])
   }
   global_seed = atoi(argv[1]);
   run_name = argv[2];
+
+#ifdef SEARCH_POLICY_EXPECTIMAX
+  if (run_name.find("__policy=") == string::npos) {
+    run_name += "__policy=expecti3";
+  }
+#endif
   srand(global_seed);
 
   double init_ev = 0.0;
@@ -415,31 +431,13 @@ int main(int argc, char* argv[])
     int lastboard[9] = {0};
     while (true) { // ゲームのループ
       turn++;
-      state_t copy;
+      double evals[4];
+      int selected = select_move(state, eval_board, evals, false);
       double max_ev_r = -DBL_MAX;
-      int selected = -1;
       for (int d = 0; d < 4; d++) {
-	if (play(d, state, &copy)) {
-#if defined(USE_4TUPLE) || defined(NT4A)
-	  double ev_r = 0.0;
-	  {
-	    CpuAccum acc(cpu_ns_eval_block);
-	    ev_r = calcEv(copy.board) + (copy.score - state.score);
-	  }
-#else
-	  double ev_r = 0.0;
-	  {
-	    CpuAccum acc(cpu_ns_eval_block);
-	    ev_r = NT6_notsym::calcEv(copy.board) + (copy.score - state.score);
-	  }
-#endif
-	  if (ev_r > max_ev_r) {
-	    max_ev_r = ev_r;
-	    selected = d;
-	  }
-	  // printf("d=%d, ev_r=%f, max_ev_r=%f\n",
-	  // 	 d, ev_r, max_ev_r);
-	}
+        if (evals[d] > max_ev_r) {
+          max_ev_r = evals[d];
+        }
       }
       // state.print();
       // printf("selected = %d\n", selected);

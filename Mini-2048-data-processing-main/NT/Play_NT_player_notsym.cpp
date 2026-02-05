@@ -19,6 +19,7 @@ using namespace std;
 #include "Game2048_3_3.h"
 #include "fread.h"
 #include "play_table.h"
+#include "search_policy.h"
 
 class GameOver {
  public:
@@ -108,6 +109,20 @@ int main(int argc, char** argv) {
   }
   fclose(fp);
   srand(seed);
+
+  double (*eval_fn)(const int*) = nullptr;
+  if (number == "4") {
+    eval_fn = NT4_notsym::calcEv;
+  } else if (number == "5") {
+    eval_fn = NT5_notsym::calcEv;
+  } else if (number == "6") {
+    eval_fn = NT6_notsym::calcEv;
+  }
+  if (eval_fn == nullptr) {
+    fprintf(stderr, "Error: eval function not set for number=%s\n",
+            number.c_str());
+    exit(1);
+  }
   list<array<int, 9>> state_list;
   list<array<int, 9>> after_state_list;
   const int eval_length = 5;
@@ -119,30 +134,11 @@ int main(int argc, char** argv) {
     int turn = 0;
     while (true) {
       turn++;
-      state_t copy;
-      double max_evr = -DBL_MAX;
-      int selected = -1;
       const int n = 5;
       double evals[n];
-      for (int i = 0; i < n; i++) {
-        evals[i] = -1.0e10;
-      }
-      for (int d = 0; d < 4; d++) {
-        if (play(d, state, &copy)) {
-          if (number == "4") {
-            evals[d] = NT4_notsym::calcEv(copy.board);
-          } else if (number == "5") {
-            evals[d] = NT5_notsym::calcEv(copy.board);
-          } else {
-            evals[d] = NT6_notsym::calcEv(copy.board);
-          }
-          if (max_evr == evals[d]) {
-          }
-          if (max_evr < evals[d]) {
-            max_evr = evals[d];
-            selected = d;
-          }
-        }
+      int selected = select_move(state, eval_fn, evals, false);
+      if (selected == -1) {
+        fprintf(stderr, "Something wrong. No direction played.\n");
       }
       state_list.push_back(
           array<int, 9>{state.board[0], state.board[1], state.board[2],

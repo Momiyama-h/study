@@ -21,6 +21,7 @@ using namespace std;
 #include "Game2048_3_3.h"
 #include "fread.h"
 #include "play_table.h"
+#include "search_policy.h"
 
 class GameOver {
  public:
@@ -255,6 +256,33 @@ int main(int argc, char** argv) {
   }
   fclose(fp);
   srand(seed);
+
+  double (*eval_fn)(const int*) = nullptr;
+  if (number == "4") {
+    if (symmetry == "sym") {
+      eval_fn = single_stage ? calcEv_stage0_nt4_sym : NT4::calcEv;
+    } else {
+      eval_fn = single_stage ? calcEv_stage0_nt4_notsym : NT4_notsym::calcEv;
+    }
+  } else if (number == "5") {
+    if (symmetry == "sym") {
+      eval_fn = single_stage ? calcEv_stage0_nt5_sym : NT5::calcEv;
+    } else {
+      eval_fn = single_stage ? calcEv_stage0_nt5_notsym : NT5_notsym::calcEv;
+    }
+  } else if (number == "6") {
+    if (symmetry == "sym") {
+      eval_fn = single_stage ? calcEv_stage0_nt6_sym : NT6::calcEv;
+    } else {
+      eval_fn = single_stage ? calcEv_stage0_nt6_notsym : NT6_notsym::calcEv;
+    }
+  }
+  if (eval_fn == nullptr) {
+    fprintf(stderr, "Error: eval function not set for number=%s symmetry=%s\n",
+            number.c_str(), symmetry.c_str());
+    exit(1);
+  }
+  const bool use_sym_cache = (symmetry == "sym");
   list<array<int, 9>> state_list;
   list<array<int, 9>> after_state_list;
   const int eval_length = 5;
@@ -266,52 +294,12 @@ int main(int argc, char** argv) {
     int turn = 0;
     while (true) {
       turn++;
-      state_t copy;
-      double max_evr = -DBL_MAX;
-      int selected = -1;
       const int n = 5;
       double evals[n];
-      for (int i = 0; i < n; i++) {
-        evals[i] = -1.0e10;
+      int selected = select_move(state, eval_fn, evals, use_sym_cache);
+      if (selected == -1) {
+        fprintf(stderr, "Something wrong. No direction played.\n");
       }
-      for (int d = 0; d < 4; d++) {
-        if (play(d, state, &copy)) {
-          // int index = to_index(copy.board);
-          if (number == "4") {
-            if (symmetry == "sym") {
-              evals[d] = single_stage ? calcEv_stage0_nt4_sym(copy.board)
-                                      : NT4::calcEv(copy.board);
-            } else {
-              evals[d] = single_stage ? calcEv_stage0_nt4_notsym(copy.board)
-                                      : NT4_notsym::calcEv(copy.board);
-            }
-          } else if (number == "5") {
-            if (symmetry == "sym") {
-              evals[d] = single_stage ? calcEv_stage0_nt5_sym(copy.board)
-                                      : NT5::calcEv(copy.board);
-            } else {
-              evals[d] = single_stage ? calcEv_stage0_nt5_notsym(copy.board)
-                                      : NT5_notsym::calcEv(copy.board);
-            }
-          } else {
-            if (symmetry == "sym") {
-              evals[d] = single_stage ? calcEv_stage0_nt6_sym(copy.board)
-                                      : NT6::calcEv(copy.board);
-            } else {
-              evals[d] = single_stage ? calcEv_stage0_nt6_notsym(copy.board)
-                                      : NT6_notsym::calcEv(copy.board);
-            }
-          }
-          // printf("%f ",evals[d]);
-          if (max_evr == evals[d]) {
-          }
-          if (max_evr < evals[d]) {
-            max_evr = evals[d];
-            selected = d;
-          }
-        }
-      }
-      // printf("\n");
       state_list.push_back(
           array<int, 9>{state.board[0], state.board[1], state.board[2],
                         state.board[3], state.board[4], state.board[5],
