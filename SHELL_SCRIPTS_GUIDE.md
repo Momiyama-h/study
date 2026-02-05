@@ -21,7 +21,8 @@
   - log: `training_logs/<run_name>/seed<seed>/NT{4|5|6}_{sym|notsym}/`
 - 学習＋評価＋board_data (`run_train_eval_boarddata.sh`)
   - 上記に加えて `board_data/<run_name>/seed<seed>/NT{4|6}_{sym|notsym}/`
-  - meta.json は board_data 生成時に作成
+    - eval_seed を指定した場合は `.../eval_seed<eval_seed>/` が挟まれる
+  - meta.json は board_data 生成時に作成（`train_seed` / `eval_seed` を保持）
 
 このドキュメントは、リポジトリ内の .sh の用途と使い方をまとめたものです。パスや出力先は現行コードの挙動に基づいています。
 
@@ -81,20 +82,25 @@
 
 ### run_make_board_data_from_dat.sh
 - 目的: 既存 .dat から board_data を作成
-- デフォルト: game_count=10000、meta.json は不足分のみ作成（不一致時は警告のみ）
+- デフォルト: game_count=100、meta.json は不足分のみ作成（不一致時は警告のみ）
 - 必須引数:
   - --run-name NAME
   - --seed-start N --seed-end N
   - --ev-stages LIST（例: 9 または 0,1,2）
 - 追加オプション:
   - --dat-run-name NAME: dat 探索用の run_name（省略時は --run-name と同じ）
+- eval_seed 指定:
+  - --eval-seed-start / --eval-seed-end
+  - --eval-seeds LIST（カンマ/空白区切り）
 - オプション:
   - --force-meta: meta.json の不一致を検出した場合に上書き再生成
   - --overwrite: 既存の board_data を削除して再生成
   - --single-stage / --nostage: stage0 固定で評価（play_nt_ns を使用）
+  - --board-root / --dat-root: 入出力のルートを変更
 - 備考:
   - play_nt が無い場合は自動ビルド
   - play_nt_ns が無い場合は -DSINGLE_STAGE で自動ビルド
+  - eval_seed を指定すると出力が `.../NT{tuple}_{sym}/eval_seed<eval_seed>/` になる
 - 例:
   - ./training/run_make_board_data_from_dat.sh --run-name 20260123_0300__stage --seed-start 5 --seed-end 14 --ev-stages 9
   - ./training/run_make_board_data_from_dat.sh --run-name 20260123_0300__nostage --seed-start 5 --seed-end 14 --ev-stages 9 --nostage --overwrite
@@ -212,12 +218,14 @@
   - --tuples LIST: 4,6 など
   - --sym-list LIST: sym,notsym など
   - --parallel N: 並列数（デフォルト: nproc）
+  - --board-root / --analysis-root: 入出力のルートを変更
 - 出力先:
   - /HDD/momiyama2/data/study/analysis_outputs/<run_name>/NT{4|6}/{graph}/{sym|notsym}/
 - 補足:
   - run_name の一致判定は「完全一致」に寄せています（`^<run_name>/(|$)`）。
   - 例: `__stage` を指定しても `__stage_g100` は混ざりません。
   - surv-diff 系は PP の `eval-after-state.txt` と対象 `state.txt` の progress 数が一致していない場合にエラーを返します。
+  - eval_seed 層がある場合は **全 eval_seed を対象**に集計します。特定 eval_seed に絞る場合は `uv run -m graph --eval-seed` を直接使ってください。
 - 例:
   - ./run_graph_for_run_name.sh --run-name 20260123_0300__nostage --graph acc --seed-start 5 --seed-end 14 --stage 9 --output-name acc_stage9
   - ./run_graph_for_run_name.sh --run-name 20260123_0300__nostage --graph acc-mean --seed-start 5 --seed-end 14 --stage 9 --output-name acc_mean_stage9

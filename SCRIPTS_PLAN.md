@@ -117,3 +117,52 @@
 - 既定: `analysis_outputs/<run_name>/pp_corr/pp_corr_spearman_after.csv`
 - 併記推奨: `pp_corr_spearman_state.csv`（eval-state版）
 - README で条件（seed/tuple/sym/game_count）を明文化すると査読向けに強い。
+
+---
+
+## eval_seed層導入時の影響対象チェックリスト
+
+### 解析スクリプト（state/after-state直下前提）
+- training/make_progress_counts.py
+- training/make_seed_score_matrix.py
+- training/make_pp_corr_matrix.py
+- Mini-2048-data-processing-main/make_tile_prob_by_nt_sym.py
+- Mini-2048-data-processing-main/make_pp_regression_matrix.py
+- Mini-2048-data-processing-main/average_progress.py
+- Mini-2048-data-processing-main/average_score.py
+- Mini-2048-data-processing-main/run_scatter_pipeline.sh
+- Mini-2048-data-processing-main/perfect_player/process_all_directories.py
+- Mini-2048-data-processing-main/graph/common.py
+- Mini-2048-data-processing-main/graph/survival.py
+- Mini-2048-data-processing-main/graph/survival_diff.py
+
+### プレイヤー/評価系（state/after-stateの入出力）
+- Mini-2048-data-processing-main/NT/Play_NT_player.cpp
+- Mini-2048-data-processing-main/NT/Play_NT_player_notsym.cpp
+- Mini-2048-data-processing-main/Expectimax/Play_NT_player.cpp
+- Mini-2048-data-processing-main/mcts/mcts_NT.cpp
+- Mini-2048-data-processing-main/NT_all_tuple/play/play_greedy*.cpp
+- Mini-2048-data-processing-main/NT_all_tuple/play/play_expectimax.cpp
+- Mini-2048-data-processing-main/NT_all_tuple/play/play_mcts.cpp
+
+### eval/PP 生成
+- Mini-2048-data-processing-main/NT/eval_state.cpp
+- Mini-2048-data-processing-main/NT/eval_after_state.cpp
+- Mini-2048-data-processing-main/NT_all_tuple/eval/eval_state.cpp
+- Mini-2048-data-processing-main/NT_all_tuple/eval/eval_after_state.cpp
+- Mini-2048-data-processing-main/perfect_player/eval_state.cpp
+- Mini-2048-data-processing-main/perfect_player/eval_after_state.cpp
+- Mini-2048-data-processing-main/perfect_player/run_eval_pp_for_run_name.sh
+
+### ドキュメント（パス前提の明記が必要）
+- DATA_LAYOUT.md
+- SHELL_SCRIPTS_GUIDE.md
+- SCRIPTS_PLAN.md
+- Mini-2048-data-processing-main/USAGE_SUMMARY.md
+- Mini-2048-data-processing-main/graph/README.md
+- Mini-2048-data-processing-main/NT/README.md
+- Mini-2048-data-processing-main/perfect_player/README.md
+
+### メモ
+- eval層（例: eval000）を挟むだけだと、上記の多くが探索失敗する。
+- 互換symlink方式を使うなら修正範囲は大幅に減らせる。

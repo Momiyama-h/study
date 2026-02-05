@@ -122,6 +122,7 @@ g++ eval_state.cpp -O2 -std=c++20 -mcmodel=large -o eval_state_pp
 補足:
 - `state.txt` そのものではなく「ディレクトリ」を渡します。
 - `<safe_name>` は相対パスの `/` を `__` に置換したものです。
+- `BOARD_DATA_ROOT` 環境変数で board_data ルートを上書きできます。
 
 ### eval_after_state.cpp
 コンパイル:
@@ -137,6 +138,7 @@ g++ eval_after_state.cpp -O2 -std=c++20 -mcmodel=large -o eval_after_state_pp
  
 補足:
 - `<safe_name>` は相対パスの `/` を `__` に置換したものです。
+- `BOARD_DATA_ROOT` 環境変数で board_data ルートを上書きできます。
 
 ## graph - `graph/`
 
@@ -158,6 +160,35 @@ uv run -m graph histgram --exclude sample
 - `scatter` / `scatter_v2` は `board_data/PP/eval-after-state-<player>.txt` が必要。
 - `scatter_v2` は `eval.txt` の各行で最大評価値を使います。
 - ネストしたディレクトリを対象にする場合は `--recursive` を使います。
+
+## analysis - `analysis/`
+
+### make_train_eval_score_matrix.py
+board_data の `state.txt` から **train_seed × eval_seed** の平均スコアを集計してCSV出力。  
+eval_seed 層（`eval_seedN/`）がある場合はそれを優先し、無い場合は `state.txt` を直下から読む。
+
+実行例:
+```
+python3 analysis/make_train_eval_score_matrix.py \
+  --run-name 20260129_2000_OI1200__stage \
+  --board-root /HDD/momiyama2/data/study/board_data \
+  --train-seed-start 5 --train-seed-end 14 \
+  --eval-seed-start 5 --eval-seed-end 14 \
+  --tuples 4,5,6 --sym-list sym,notsym
+```
+長形式（tidy）も同時出力:
+```
+python3 analysis/make_train_eval_score_matrix.py \
+  --run-name 20260129_2000_OI1200__stage \
+  --board-root /HDD/momiyama2/data/study/board_data \
+  --train-seed-start 5 --train-seed-end 14 \
+  --eval-seed-start 5 --eval-seed-end 14 \
+  --tuples 4,5,6 --sym-list sym,notsym \
+  --long
+```
+出力:
+- `board_data/<run_name>/score_train_eval_matrix.csv`
+- `board_data/<run_name>/score_train_eval_matrix_long.csv`（`--long` 時）
 
 ## Expectimax - `Expectimax/`
 

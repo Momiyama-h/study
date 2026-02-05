@@ -81,7 +81,7 @@ ${STUDY_DATA_ROOT}/training_logs/<run_name>/seed<seed>/{NT4_sym|NT4_notsym|NT6_s
 ---
 
 ## board_data の配置（新ルール）
-board_data は `<run_name>` と seed を明示した階層で保存する。
+board_data は `<run_name>` と train seed を明示した階層で保存する。
 
 ```
 ${STUDY_DATA_ROOT}/board_data/<run_name>/seed<seed>/{NT4_sym|NT4_notsym|NT6_sym|NT6_notsym}/
@@ -90,6 +90,19 @@ ${STUDY_DATA_ROOT}/board_data/<run_name>/seed<seed>/{NT4_sym|NT4_notsym|NT6_sym|
 例:
 - `${STUDY_DATA_ROOT}/board_data/20250201_1200__stage/seed15/NT6_sym/state.txt`
 - `${STUDY_DATA_ROOT}/board_data/20250201_1200__nostage/seed15/NT6_notsym/eval.txt`
+
+### eval_seed を導入する場合
+評価用 seed（eval_seed）を分離する場合は、`NT*_*/` の下に `eval_seedN/` を挟む。
+
+```
+${STUDY_DATA_ROOT}/board_data/<run_name>/seed<train_seed>/NT*_*/eval_seed<eval_seed>/
+```
+
+例:
+- `${STUDY_DATA_ROOT}/board_data/20260129_2000_OI1200__stage/seed5/NT4_sym/eval_seed7/state.txt`
+- `${STUDY_DATA_ROOT}/board_data/20260129_2000_OI1200__stage/seed5/NT4_sym/eval_seed7/pp-eval-state.txt`
+
+> meta.json には `train_seed` と `eval_seed` を記録する。
 
 ## repo との連携（推奨）
 分析コードは `Mini-2048-data-processing-main/board_data` を参照するため、
@@ -131,3 +144,9 @@ ln -s "${STUDY_DATA_ROOT}/analysis_outputs"   Mini-2048-data-processing-main/out
 | state/after-state/eval | ${STUDY_DATA_ROOT}/board_data/<run_name>/seed<seed>/NT*_*/ |
 | meta.json | ${STUDY_DATA_ROOT}/board_data/<run_name>/seed<seed>/NT*_*/ |
 | 図・集計CSV | ${STUDY_DATA_ROOT}/analysis_outputs/<run_id>/ |
+
+### eval_seed 併用時の推奨ルート（過去データと分離したい場合）
+- `${STUDY_DATA_ROOT}/board_data_v2/`
+- `${STUDY_DATA_ROOT}/analysis_outputs_v2/`
+
+> ntuple_dat と training_logs は学習データのみのため、v2 生成は不要。

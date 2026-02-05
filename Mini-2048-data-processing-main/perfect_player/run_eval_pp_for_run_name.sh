@@ -103,11 +103,11 @@ run_one() {
     fi
   fi
 
-  if ! state_report="$(cd "$SCRIPT_DIR" && ./eval_state_pp "$rel")"; then
+  if ! state_report="$(cd "$SCRIPT_DIR" && BOARD_DATA_ROOT="$BOARD_ROOT_REAL" ./eval_state_pp "$rel")"; then
     echo "ERROR: eval_state_pp failed for $rel" >&2
     return 1
   fi
-  if ! after_report="$(cd "$SCRIPT_DIR" && ./eval_after_state_pp "$rel")"; then
+  if ! after_report="$(cd "$SCRIPT_DIR" && BOARD_DATA_ROOT="$BOARD_ROOT_REAL" ./eval_after_state_pp "$rel")"; then
     echo "ERROR: eval_after_state_pp failed for $rel" >&2
     return 1
   fi
@@ -138,7 +138,7 @@ run_one() {
     # legacy mode no longer used (kept for compatibility)
     :
   else
-    seed_dir="$(basename "$(dirname "$d")")"
+    seed_dir="$(printf '%s\n' "$rel" | tr '/' '\n' | awk '/^seed[0-9]+$/{print $0; exit}')"
     if [[ "$seed_dir" =~ ^seed[0-9]+$ ]]; then
       seed_num="${seed_dir#seed}"
     else
@@ -184,9 +184,19 @@ spawn_job() {
   fi
 }
 
-while IFS= read -r -d '' d; do
-  spawn_job "$d"
-done < <(find "$TARGET_ROOT" -mindepth 2 -maxdepth 2 -type d -name "NT*_*" -print0)
+declare -A seen_dirs
+while IFS= read -r -d '' f; do
+  d="$(dirname "$f")"
+  d_real="$(readlink -f "$d")"
+  rel="${d_real#$BOARD_ROOT_REAL/}"
+  if [[ "$rel" == PP/* ]]; then
+    continue
+  fi
+  if [[ -z "${seen_dirs[$d_real]+x}" ]]; then
+    seen_dirs["$d_real"]=1
+    spawn_job "$d"
+  fi
+done < <(find "$TARGET_ROOT" -type f -name "state.txt" -print0)
 wait
 
 count="$(wc -l < "$count_file" | tr -d ' ')"

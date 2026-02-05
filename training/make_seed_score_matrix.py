@@ -97,23 +97,40 @@ def collect_dat_index(run_dir: Path, stage: int):
     return tuples, syms, seeds, index
 
 
-def calc_rows_from_board(run_dir: Path, tuples: List[str], syms: List[str]):
+def calc_rows_from_board(
+    run_dir: Path, tuples: List[str], syms: List[str], eval_seeds: Optional[List[int]]
+):
     rows = []
     seeds = parse_seeds_from_board(run_dir)
     for seed in seeds:
         row = {"seed": seed}
         for t in tuples:
             for s in syms:
-                state = run_dir / f"seed{seed}" / f"NT{t}_{s}" / "state.txt"
+                nt_dir = run_dir / f"seed{seed}" / f"NT{t}_{s}"
                 key = f"NT{t}_{s}"
-                if not state.exists():
+                state_paths: List[Path] = []
+                if eval_seeds:
+                    for es in eval_seeds:
+                        state_paths.append(nt_dir / f"eval_seed{es}" / "state.txt")
+                else:
+                    eval_dirs = sorted(
+                        [p for p in nt_dir.glob("eval_seed*") if p.is_dir()]
+                    )
+                    if eval_dirs:
+                        state_paths.extend([p / "state.txt" for p in eval_dirs])
+                    else:
+                        state_paths.append(nt_dir / "state.txt")
+
+                scores_all: List[int] = []
+                for state in state_paths:
+                    if not state.exists():
+                        continue
+                    scores_all.extend(parse_scores(state))
+
+                if not scores_all:
                     row[key] = ""
                     continue
-                scores = parse_scores(state)
-                if not scores:
-                    row[key] = ""
-                    continue
-                mean = sum(scores) / len(scores)
+                mean = sum(scores_all) / len(scores_all)
                 row[key] = f"{mean:.4f}"
         rows.append(row)
     return rows
@@ -284,6 +301,9 @@ def main() -> int:
         default="",
         help="comma-separated sym list (default: auto from directory)",
     )
+    parser.add_argument("--eval-seed-start", type=int, default=None)
+    parser.add_argument("--eval-seed-end", type=int, default=None)
+    parser.add_argument("--eval-seeds", default="", help="space/comma-separated eval seeds")
     parser.add_argument(
         "--output",
         default="",
@@ -337,7 +357,13 @@ def main() -> int:
             syms = [s.strip() for s in args.sym_list.split(",") if s.strip()]
         else:
             _tuples, syms = parse_tuple_sym_dirs(run_dir_board)
-        rows = calc_rows_from_board(run_dir_board, tuples, syms)
+        eval_seeds: Optional[List[int]] = None
+        if args.eval_seeds:
+            raw = args.eval_seeds.replace(",", " ").split()
+            eval_seeds = [int(x) for x in raw if x.strip()]
+        elif args.eval_seed_start is not None and args.eval_seed_end is not None:
+            eval_seeds = list(range(args.eval_seed_start, args.eval_seed_end + 1))
+        rows = calc_rows_from_board(run_dir_board, tuples, syms, eval_seeds)
 
     cols = [f"NT{t}_{s}" for t in tuples for s in syms]
     means, sds = calc_mean_sd(rows, cols)

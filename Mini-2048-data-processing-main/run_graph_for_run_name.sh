@@ -24,6 +24,8 @@ Options:
   --with-sd            (surv-mean-symdiff only) draw mean±SD band
   --include-pp         (surv-mean / surv-mean-symdiff) include PP mean curve
   --y-label LABEL      scatter系のy軸ラベルを指定（例: NT4player）
+  --board-root PATH    board_data root (default: <repo>/board_data)
+  --analysis-root PATH analysis_outputs root (default: /HDD/momiyama2/data/study/analysis_outputs)
 USAGE
 }
 
@@ -47,6 +49,8 @@ PASS_WITH_SD=0
 INCLUDE_PP=0
 PASS_INCLUDE_PP=0
 Y_LABEL=""
+BOARD_ROOT=""
+ANALYSIS_ROOT=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -67,6 +71,8 @@ while [[ $# -gt 0 ]]; do
     --with-sd) WITH_SD=1; shift;;
     --include-pp) INCLUDE_PP=1; shift;;
     --y-label) Y_LABEL="$2"; shift 2;;
+    --board-root) BOARD_ROOT="$2"; shift 2;;
+    --analysis-root) ANALYSIS_ROOT="$2"; shift 2;;
     -h|--help) usage; exit 0;;
     *) echo "Unknown option: $1"; usage; exit 1;;
   esac
@@ -102,9 +108,15 @@ if [[ -z "$OUTPUT_NAME" ]]; then
 fi
 
 REPO="/HDD/momiyama2/repo/Mini-2048-data-processing-main"
-BOARD_ROOT="$REPO/board_data"
+if [ -z "$BOARD_ROOT" ]; then
+  BOARD_ROOT="$REPO/board_data"
+fi
 RUN_DIR="$BOARD_ROOT/$RUN_NAME"
-OUT_BASE="/HDD/momiyama2/data/study/analysis_outputs"
+if [ -z "$ANALYSIS_ROOT" ]; then
+  OUT_BASE="/HDD/momiyama2/data/study/analysis_outputs"
+else
+  OUT_BASE="$ANALYSIS_ROOT"
+fi
 
 if [ ! -d "$RUN_DIR" ]; then
   echo "ERROR: run_name directory not found: $RUN_DIR" >&2
@@ -173,7 +185,7 @@ PY
     cmd+=("${seed_args[@]}")
   fi
 
-  ( cd "$REPO" && "${cmd[@]}" )
+  ( cd "$REPO" && BOARD_DATA_ROOT="$BOARD_ROOT" "${cmd[@]}" )
   echo "Saved: $out_dir (by --output-dir)"
 }
 

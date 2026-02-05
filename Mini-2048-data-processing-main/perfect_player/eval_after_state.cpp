@@ -1,4 +1,5 @@
 #include <cfloat>
+#include <cstdlib>
 #include <climits>
 #include <filesystem>
 #include <iostream>
@@ -34,7 +35,9 @@ int main(int argc, char** argv) {
   }
 
   fs::path input_rel = fs::path(argv[1]);
-  std::string input_dir = (fs::path("../board_data") / input_rel).string();
+  const char* base_env = std::getenv("BOARD_DATA_ROOT");
+  std::string base_root = (base_env && *base_env) ? base_env : "../board_data";
+  std::string input_dir = (fs::path(base_root) / input_rel).string();
 
     // after-state.txt のパスを生成
     std::string after_state_file = (fs::path(input_dir) / "after-state.txt").string();

@@ -58,6 +58,12 @@ def main() -> int:
         default=None,
         help="tuple表示用ラベル（例: 4a, 4b, 4, 5, 6）",
     )
+    parser.add_argument(
+        "--eval-seed",
+        type=int,
+        default=None,
+        help="評価用seed（未指定ならディレクトリ名/seedから推定）",
+    )
     args = parser.parse_args()
 
     data_dir = Path(args.data_dir).resolve()
@@ -76,6 +82,27 @@ def main() -> int:
         meta["game_count"] = int(args.game_count)
     if args.tuple_label is not None and args.tuple_label != "":
         meta["tuple_label"] = str(args.tuple_label)
+
+    # train/eval seed handling
+    meta["train_seed"] = meta.get("seed")
+    eval_seed = args.eval_seed
+    if eval_seed is None:
+        # try to infer from relpath (eval_seedN)
+        try:
+            parts = rel_str.split("/")
+        except Exception:
+            parts = []
+        for part in parts:
+            if part.startswith("eval_seed"):
+                try:
+                    eval_seed = int(part.replace("eval_seed", ""))
+                    break
+                except ValueError:
+                    pass
+    if eval_seed is None and meta.get("seed") is not None:
+        eval_seed = int(meta["seed"])
+    if eval_seed is not None:
+        meta["eval_seed"] = eval_seed
 
     meta_path = data_dir / "meta.json"
     if meta_path.exists() and not args.force:

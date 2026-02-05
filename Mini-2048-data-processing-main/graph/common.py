@@ -1,4 +1,5 @@
 import json
+import os
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -6,7 +7,7 @@ from pathlib import Path
 import numpy as np
 
 BASE_DIR = Path(__file__).resolve().parent
-board_dir = BASE_DIR.parent / "board_data"
+board_dir = Path(os.environ.get("BOARD_DATA_ROOT", str(BASE_DIR.parent / "board_data")))
 
 
 def make_safe_name(rel_path: Path) -> str:

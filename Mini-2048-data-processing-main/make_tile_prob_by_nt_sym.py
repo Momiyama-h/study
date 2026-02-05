@@ -45,12 +45,20 @@ def main():
     files = glob.glob(
         os.path.join(args.board_root, args.run_name, "seed*", "NT*_*/state.txt")
     )
+    files += glob.glob(
+        os.path.join(args.board_root, args.run_name, "seed*", "NT*_*/eval_seed*/state.txt")
+    )
     if not files:
         raise SystemExit("no state.txt found")
 
     groups = defaultdict(list)  # (NT, sym) -> max_list
     for f in files:
-        nt_sym = os.path.basename(os.path.dirname(f))  # NT4_sym
+        dir_path = os.path.dirname(f)
+        base = os.path.basename(dir_path)
+        if base.startswith("eval_seed"):
+            nt_sym = os.path.basename(os.path.dirname(dir_path))
+        else:
+            nt_sym = base
         parts = nt_sym.split("_", 1)
         if len(parts) != 2:
             continue

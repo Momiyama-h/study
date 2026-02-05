@@ -106,10 +106,17 @@ def main() -> int:
 
     ext = args.ext.lstrip(".")
 
-    # Find all state.txt under seed*/NT*_* directories.
+    # Find all state.txt under seed*/NT*_*[/eval_seed*] directories.
     state_files = []
     for p in run_dir.rglob("state.txt"):
-        if p.parent.name.startswith("NT") and p.parent.parent.name.startswith("seed"):
+        parent = p.parent
+        if parent.name.startswith("eval_seed"):
+            nt_dir = parent.parent
+            seed_dir = nt_dir.parent if nt_dir else None
+        else:
+            nt_dir = parent
+            seed_dir = parent.parent if parent else None
+        if nt_dir and seed_dir and nt_dir.name.startswith("NT") and seed_dir.name.startswith("seed"):
             state_files.append(p)
     state_files = sorted(set(state_files))
 
@@ -121,6 +128,10 @@ def main() -> int:
 
     for state_path in state_files:
         nt_dir = state_path.parent
+        eval_seed = ""
+        if nt_dir.name.startswith("eval_seed"):
+            eval_seed = nt_dir.name
+            nt_dir = nt_dir.parent
         seed_dir = nt_dir.parent
         seed = seed_dir.name
         nt = nt_dir.name
@@ -135,6 +146,8 @@ def main() -> int:
         xs = sorted(counts.keys())
         ys = [counts[x] for x in xs]
         base = f"progress_count_{seed}_{nt}"
+        if eval_seed:
+            base = f"{base}_{eval_seed}"
 
         if want_csv:
             csv_path = out_dir / f"{base}.csv"

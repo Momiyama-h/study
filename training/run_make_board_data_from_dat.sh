@@ -15,6 +15,9 @@ Options:
   --tuples LIST      comma-separated tuples (default: 4,6)
   --sym-list LIST    comma-separated sym list (default: sym,notsym)
   --game-count N     game count per eval (default: 100)
+  --eval-seed-start N  eval seed start (optional)
+  --eval-seed-end N    eval seed end (optional)
+  --eval-seeds LIST    eval seed list (comma/space-separated, optional)
   --parallel N       max parallel jobs (default: nproc)
   --board-root PATH  board_data root (default: /HDD/momiyama2/data/study/board_data)
   --dat-root PATH    ntuple_dat root (default: /HDD/momiyama2/data/study/ntuple_dat)
@@ -33,6 +36,9 @@ EV_STAGES=""
 TUPLES="4,6"
 SYM_LIST="sym,notsym"
 GAME_COUNT=100
+EVAL_SEED_START=""
+EVAL_SEED_END=""
+EVAL_SEEDS=""
 PARALLEL="$(nproc)"
 BOARD_ROOT="/HDD/momiyama2/data/study/board_data"
 DAT_ROOT="/HDD/momiyama2/data/study/ntuple_dat"
@@ -50,6 +56,9 @@ while [[ $# -gt 0 ]]; do
     --tuples) TUPLES="$2"; shift 2;;
     --sym-list) SYM_LIST="$2"; shift 2;;
     --game-count) GAME_COUNT="$2"; shift 2;;
+    --eval-seed-start) EVAL_SEED_START="$2"; shift 2;;
+    --eval-seed-end) EVAL_SEED_END="$2"; shift 2;;
+    --eval-seeds) EVAL_SEEDS="$2"; shift 2;;
     --parallel) PARALLEL="$2"; shift 2;;
     --board-root) BOARD_ROOT="$2"; shift 2;;
     --dat-root) DAT_ROOT="$2"; shift 2;;
@@ -70,6 +79,14 @@ if [[ -z "$DAT_RUN_NAME" ]]; then
 fi
 if [[ "$RUN_NAME" == *nostage* ]]; then
   SINGLE_STAGE=1
+fi
+if [[ -n "$EVAL_SEEDS" && ( -n "$EVAL_SEED_START" || -n "$EVAL_SEED_END" ) ]]; then
+  echo "ERROR: --eval-seeds and --eval-seed-start/--eval-seed-end are mutually exclusive." >&2
+  exit 1
+fi
+if [[ -n "$EVAL_SEED_START" && -z "$EVAL_SEED_END" ]]; then
+  echo "ERROR: --eval-seed-end is required when --eval-seed-start is set." >&2
+  exit 1
 fi
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -92,6 +109,7 @@ run_one() {
   local tuple="$2"
   local sym="$3"
   local stage="$4"
+  local eval_seed="${5:-}"
 
   local dat_dir="${DAT_ROOT}/${DAT_RUN_NAME}/seed${seed}/NT${tuple}_${sym}"
   local evfile="${dat_dir}/${tuple}tuple_${sym}_data_${seed}_${stage}.dat"
@@ -110,6 +128,9 @@ run_one() {
     play_args+=(--single-stage)
   fi
   local data_dir="${BOARD_ROOT}/${RUN_NAME}/seed${seed}/NT${tuple}_${sym}"
+  if [[ -n "$eval_seed" ]]; then
+    data_dir="${data_dir}/eval_seed${eval_seed}"
+  fi
   if [ "$OVERWRITE" -eq 1 ]; then
     rm -rf "$data_dir"
   fi
@@ -117,24 +138,31 @@ run_one() {
   if [ "$SINGLE_STAGE" -eq 1 ]; then
     player_bin="$BASE_NT/play_nt_ns"
   fi
+  local eval_args=()
+  if [[ -n "$eval_seed" ]]; then
+    eval_args+=(--eval-seed "$eval_seed")
+  fi
   "$player_bin" "$seed" "$GAME_COUNT" "$evfile" "$sym" "$tuple" \
-    --run-name "$RUN_NAME" --board-root "$BOARD_ROOT" "${play_args[@]}"
+    --run-name "$RUN_NAME" --board-root "$BOARD_ROOT" "${play_args[@]}" "${eval_args[@]}"
 
   local write_meta="${REPO_ROOT}/Mini-2048-data-processing-main/write_meta.py"
   if [ -f "$write_meta" ] && [ -d "$data_dir" ]; then
     local meta_path="${data_dir}/meta.json"
     if [ ! -f "$meta_path" ]; then
-      python3 "$write_meta" --board-dir "$BOARD_ROOT" --game-count "$GAME_COUNT" --tuple-label "$tuple_label" "$data_dir" "$evfile"
+      python3 "$write_meta" --board-dir "$BOARD_ROOT" --game-count "$GAME_COUNT" --tuple-label "$tuple_label" \
+        ${eval_seed:+--eval-seed "$eval_seed"} \
+        "$data_dir" "$evfile"
     else
-      python3 - "$meta_path" "$(basename "$evfile")" "$seed" "$stage" "$tuple" "$sym" "$GAME_COUNT" "$tuple_label" <<'PY'
+      python3 - "$meta_path" "$(basename "$evfile")" "$seed" "$stage" "$tuple" "$sym" "$GAME_COUNT" "$tuple_label" "$eval_seed" <<'PY'
 import json
 import sys
 
-meta_path, evfile, seed, stage, tuple_num, sym, game_count, tuple_label = sys.argv[1:9]
+meta_path, evfile, seed, stage, tuple_num, sym, game_count, tuple_label, eval_seed = sys.argv[1:10]
 seed = int(seed)
 stage = int(stage)
 tuple_num = int(tuple_num)
 game_count = int(game_count)
+eval_seed = int(eval_seed) if eval_seed else None
 ok = True
 try:
     data = json.load(open(meta_path, "r", encoding="utf-8"))
@@ -157,11 +185,15 @@ check("sym", sym)
 check("game_count", game_count)
 if tuple_label:
     check("tuple_label", tuple_label)
+if eval_seed is not None:
+    check("eval_seed", eval_seed)
 sys.exit(2 if not ok else 0)
 PY
       status=$?
       if [ "$status" -eq 2 ] && [ "$FORCE_META" -eq 1 ]; then
-        python3 "$write_meta" --force --board-dir "$BOARD_ROOT" --game-count "$GAME_COUNT" --tuple-label "$tuple_label" "$data_dir" "$evfile"
+        python3 "$write_meta" --force --board-dir "$BOARD_ROOT" --game-count "$GAME_COUNT" --tuple-label "$tuple_label" \
+          ${eval_seed:+--eval-seed "$eval_seed"} \
+          "$data_dir" "$evfile"
       fi
     fi
   fi
@@ -178,10 +210,25 @@ spawn_job() {
 
 JOBS=0
 for seed in $(seq "$SEED_START" "$SEED_END"); do
-  for tuple in "${TUPLE_ARR[@]}"; do
-    for sym in "${SYM_ARR[@]}"; do
-      for stage in "${STAGE_ARR[@]}"; do
-        spawn_job "$seed" "$tuple" "$sym" "$stage"
+  eval_seeds=()
+  if [[ -n "$EVAL_SEEDS" ]]; then
+    eval_list="${EVAL_SEEDS//,/ }"
+    for es in $eval_list; do
+      eval_seeds+=("$es")
+    done
+  elif [[ -n "$EVAL_SEED_START" ]]; then
+    for es in $(seq "$EVAL_SEED_START" "$EVAL_SEED_END"); do
+      eval_seeds+=("$es")
+    done
+  else
+    eval_seeds+=("$seed")
+  fi
+  for eval_seed in "${eval_seeds[@]}"; do
+    for tuple in "${TUPLE_ARR[@]}"; do
+      for sym in "${SYM_ARR[@]}"; do
+        for stage in "${STAGE_ARR[@]}"; do
+          spawn_job "$seed" "$tuple" "$sym" "$stage" "$eval_seed"
+        done
       done
     done
   done

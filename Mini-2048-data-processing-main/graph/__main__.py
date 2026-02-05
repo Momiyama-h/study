@@ -145,7 +145,7 @@ def normalize_sym(value):
 
 
 def matches_meta(pd: PlayerData) -> bool:
-    if not (args.seed or args.stage or args.tuple or args.sym):
+    if not (args.seed or args.eval_seed or args.stage or args.tuple or args.sym):
         return True
     meta = pd.meta
     if not meta:
@@ -161,6 +161,10 @@ def matches_meta(pd: PlayerData) -> bool:
 
     if args.seed and as_int(meta.get("seed")) not in args.seed:
         return False
+    if args.eval_seed:
+        eval_seed = meta.get("eval_seed", meta.get("seed"))
+        if as_int(eval_seed) not in args.eval_seed:
+            return False
     if args.stage and as_int(meta.get("stage")) not in args.stage:
         return False
     if args.tuple and as_int(meta.get("tuple")) not in args.tuple:
@@ -328,6 +332,12 @@ arg_parser.add_argument(
     nargs="+",
     type=int,
     help="meta.jsonのseedで絞り込む。",
+)
+arg_parser.add_argument(
+    "--eval-seed",
+    nargs="+",
+    type=int,
+    help="meta.jsonのeval_seedで絞り込む（未設定の場合はseedを使用）。",
 )
 arg_parser.add_argument(
     "--stage",

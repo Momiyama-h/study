@@ -138,10 +138,12 @@ static double calcEv_stage0_nt6_notsym(const int* board) {
 }
 int main(int argc, char** argv) {
   if (argc < 2 + 1) {
-    fprintf(stderr, "Usage: playgreedy <seed> <game_counts> <evfile> [sym|notsym] [4|5|6] [--run-name NAME] [--board-root PATH] [--single-stage|--nostage]\n");
+    fprintf(stderr, "Usage: playgreedy <seed> <game_counts> <evfile> [sym|notsym] [4|5|6] [--run-name NAME] [--board-root PATH] [--eval-seed N] [--single-stage|--nostage]\n");
     exit(1);
   }
   int seed = atoi(argv[1]);
+  int eval_seed = seed;
+  bool eval_seed_set = false;
   int game_count = atoi(argv[2]);
   char* evfile = argv[3];
   string evfile_name(evfile);
@@ -186,6 +188,16 @@ int main(int argc, char** argv) {
       board_root = argv[++i];
     } else if (opt.rfind("--board-root=", 0) == 0) {
       board_root = opt.substr(strlen("--board-root="));
+    } else if (opt == "--eval-seed") {
+      if (i + 1 >= argc) {
+        fprintf(stderr, "Error: --eval-seed requires a value\n");
+        exit(1);
+      }
+      eval_seed = atoi(argv[++i]);
+      eval_seed_set = true;
+    } else if (opt.rfind("--eval-seed=", 0) == 0) {
+      eval_seed = atoi(opt.substr(strlen("--eval-seed=")).c_str());
+      eval_seed_set = true;
     } else if (opt == "--single-stage" || opt == "--nostage") {
       single_stage = true;
     } else {
@@ -227,6 +239,9 @@ int main(int argc, char** argv) {
   }
   fs::create_directories(base_root);
   string dir = base_root + "/NT" + number + "_" + symmetry + "/";
+  if (eval_seed_set) {
+    dir += "eval_seed" + to_string(eval_seed) + "/";
+  }
   fs::create_directories(dir);
 
   double average = 0;
@@ -255,7 +270,7 @@ int main(int argc, char** argv) {
     }
   }
   fclose(fp);
-  srand(seed);
+  srand(eval_seed);
 
   double (*eval_fn)(const int*) = nullptr;
   if (number == "4") {

@@ -155,6 +155,9 @@ def main() -> int:
     ap.add_argument("--sym-list", default="sym,notsym")
     ap.add_argument("--seed-start", type=int, default=None)
     ap.add_argument("--seed-end", type=int, default=None)
+    ap.add_argument("--eval-seed-start", type=int, default=None)
+    ap.add_argument("--eval-seed-end", type=int, default=None)
+    ap.add_argument("--eval-seeds", default="", help="space/comma-separated eval seeds")
     ap.add_argument(
         "--eval-kind",
         choices=("after", "state", "eval"),
@@ -197,6 +200,24 @@ def main() -> int:
             tuple_filter.add(int(t))
 
     sym_list = [s.strip() for s in args.sym_list.split(",") if s.strip()]
+
+    eval_seeds: list[int] = []
+    if args.eval_seeds:
+        raw = args.eval_seeds.replace(",", " ").split()
+        eval_seeds = [int(x) for x in raw if x.strip()]
+    elif args.eval_seed_start is not None and args.eval_seed_end is not None:
+        eval_seeds = list(range(args.eval_seed_start, args.eval_seed_end + 1))
+
+    def select_eval_dirs(nt_dir: Path) -> list[Path]:
+        if eval_seeds:
+            dirs = [nt_dir / f"eval_seed{s}" for s in eval_seeds if (nt_dir / f"eval_seed{s}").is_dir()]
+            if dirs:
+                return dirs
+            return []
+        eval_dirs = sorted([p for p in nt_dir.glob("eval_seed*") if p.is_dir()])
+        if eval_dirs:
+            return eval_dirs
+        return [nt_dir]
 
     seeds: list[int] = []
     if args.seed_start is not None and args.seed_end is not None:
@@ -261,21 +282,36 @@ def main() -> int:
             seed_dir = run_dir / f"seed{seed}"
             for _, _, label in conds:
                 nt_dir = seed_dir / label
-                nt_eval_path = nt_dir / nt_eval_name
-                pp_eval_path = None
-                if nt_dir.exists():
-                    pp_eval_path = resolve_pp_eval(
-                        board_root, nt_dir, pp_eval_prefix, pp_local_name
-                    )
-                if not nt_eval_path.exists() or pp_eval_path is None:
+                if not nt_dir.exists():
                     row.extend([math.nan, math.nan])
                     continue
-                if nt_eval_mode == "eval":
-                    nt_vals = read_eval_txt_max_values(nt_eval_path)
-                else:
-                    nt_vals = read_eval_values(nt_eval_path)
-                pp_vals = read_eval_values(pp_eval_path)
-                rho, p = spearman_corr(pp_vals, nt_vals)
+                eval_dirs = select_eval_dirs(nt_dir)
+                if not eval_dirs:
+                    row.extend([math.nan, math.nan])
+                    continue
+                all_nt_vals: list[float] = []
+                all_pp_vals: list[float] = []
+                for d in eval_dirs:
+                    nt_eval_path = d / nt_eval_name
+                    pp_eval_path = resolve_pp_eval(
+                        board_root, d, pp_eval_prefix, pp_local_name
+                    )
+                    if not nt_eval_path.exists() or pp_eval_path is None:
+                        continue
+                    if nt_eval_mode == "eval":
+                        nt_vals = read_eval_txt_max_values(nt_eval_path)
+                    else:
+                        nt_vals = read_eval_values(nt_eval_path)
+                    pp_vals = read_eval_values(pp_eval_path)
+                    n = min(len(nt_vals), len(pp_vals))
+                    if n < 2:
+                        continue
+                    all_nt_vals.extend(nt_vals[:n])
+                    all_pp_vals.extend(pp_vals[:n])
+                if not all_nt_vals or not all_pp_vals:
+                    row.extend([math.nan, math.nan])
+                    continue
+                rho, p = spearman_corr(all_pp_vals, all_nt_vals)
                 row.extend([rho, p])
             w.writerow(row)
 
