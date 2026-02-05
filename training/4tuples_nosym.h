@@ -235,6 +235,7 @@ inline double calcEv(const int *board)
     // for (int j = 0; j < 8; j++) {
     int j = 0;
     int index = 0;
+    #pragma GCC unroll
     for (int k = 0; k < TUPLE_SIZE; k++)
     {
       index = index * VARIATION_TILE + board[sympos[j][pos[i][k]]];
@@ -275,6 +276,7 @@ inline double calcErr(const int *board)
     // for (int j = 0; j < 8; j++) {
     int j = 0;
     int index = 0;
+    #pragma GCC unroll
     for (int k = 0; k < TUPLE_SIZE; k++)
     {
       index = index * VARIATION_TILE + board[sympos[j][pos[i][k]]];
@@ -296,6 +298,7 @@ inline double calcAErr(const int *board)
     // for (int j = 0; j < 8; j++) {
     int j = 0;
     int index = 0;
+    #pragma GCC unroll
     for (int k = 0; k < TUPLE_SIZE; k++)
     {
       index = index * VARIATION_TILE + board[sympos[j][pos[i][k]]];
@@ -317,6 +320,7 @@ inline double calcMinAErr(const int *board)
     //for (int j = 0; j < 8; j++){
       int j = 0;
       int index = 0;
+      #pragma GCC unroll
       for (int k = 0; k < TUPLE_SIZE; k++)
       {
         index = index * VARIATION_TILE + board[sympos[j][pos[i][k]]];
@@ -341,6 +345,7 @@ inline int calcMinCount(const int *board)
     //for (int j = 0; j < 8; j++){
     int j = 0;
       int index = 0;
+      #pragma GCC unroll
       for (int k = 0; k < TUPLE_SIZE; k++)
       {
         index = index * VARIATION_TILE + board[sympos[j][pos[i][k]]];
@@ -365,6 +370,7 @@ inline void update(const int *board, double diff)
     // for (int j = 0; j < 8; j++) {
     int j=0;
     int index = 0;
+    #pragma GCC unroll
     for (int k = 0; k < TUPLE_SIZE; k++)
     {
       index = index * VARIATION_TILE + board[sympos[j][pos[i][k]]];

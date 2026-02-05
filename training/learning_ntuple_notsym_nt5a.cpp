@@ -15,6 +15,7 @@ using namespace std;
 namespace fs = std::filesystem;
 
 #include "Game2048_3_3.h"
+#include "search_policy.h"
 // #define NT4A  // Uncomment this line to use 4-tuples instead of 6-tuples
 // prev:
 // #ifdef NT4A
@@ -60,6 +61,10 @@ namespace fs = std::filesystem;
   } while (0)
 #endif
 
+#ifndef ENABLE_CPU_LOG
+#define ENABLE_CPU_LOG 0
+#endif
+
 int storage_c = 0;
 int global_seed = 0;
 FILE *csv_fp = nullptr;
@@ -73,20 +78,57 @@ static std::chrono::steady_clock::time_point process_wall_start;
 static std::chrono::steady_clock::time_point block_wall_start;
 static fs::path output_dir;
 static string run_name;
+static const int TUPLE_LOG_BLOCK = 10000;
+static long long tuple_block_games = 0;
+static double tuple_sum_aerr_avg = 0.0;
+static double tuple_sum_aerr_std = 0.0;
+static double tuple_sum_err_avg = 0.0;
+static double tuple_sum_err_std = 0.0;
+static double tuple_sum_uc_avg = 0.0;
+static double tuple_sum_uc_std = 0.0;
+static double tuple_sum_uc_sum = 0.0;
+static double tuple_sum_score = 0.0;
+static double tuple_sum_turns = 0.0;
+static double tuple_sum_uc_vals[TRACKED_TUPLE_COUNT] = {0};
+static double tuple_sum_ratio_vals[TRACKED_TUPLE_COUNT] = {0};
 
+#if ENABLE_CPU_LOG
 static inline uint64_t now_cpu_ns_process()
 {
   timespec ts{};
   clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &ts);
   return (uint64_t)ts.tv_sec * 1000000000ull + (uint64_t)ts.tv_nsec;
 }
+#else
+static inline uint64_t now_cpu_ns_process()
+{
+  return 0;
+}
+#endif
 
 struct CpuAccum {
   uint64_t &acc;
   uint64_t st;
-  explicit CpuAccum(uint64_t &a) : acc(a), st(now_cpu_ns_process()) {}
-  ~CpuAccum() { acc += (now_cpu_ns_process() - st); }
+  explicit CpuAccum(uint64_t &a) : acc(a), st(0) {
+#if ENABLE_CPU_LOG
+    st = now_cpu_ns_process();
+#endif
+  }
+  ~CpuAccum() {
+#if ENABLE_CPU_LOG
+    acc += (now_cpu_ns_process() - st);
+#endif
+  }
 };
+
+static double eval_board(const int* board) {
+  CpuAccum acc(cpu_ns_eval_block);
+#ifdef SEARCH_POLICY_EXPECTIMAX
+  return calcEvSafe(board);
+#else
+  return calcEv(board);
+#endif
+}
 
 // 追跡するタプルIDを指定（必要に応じて変更）
 #if defined(USE_4TUPLE) || defined(NT4A) || defined(USE_5TUPLE)
@@ -191,11 +233,11 @@ void openCsvLog()
   }
   STDOUT_LOG("CSV log: %s\n", csv_path.string().c_str());
   // CSVヘッダー出力
-  fprintf(csv_fp, "game_id,score,total_turns,stage,board_index,"
-          "aerr_avg,aerr_std,err_avg,err_std,"
-          "uc_avg,uc_std,uc_sum,"
-          "uc0,uc1,uc2,uc3,uc4,uc5,uc6,uc7,"
-          "ratio0,ratio1,ratio2,ratio3,ratio4,ratio5,ratio6,ratio7\n");
+  fprintf(csv_fp, "game_id,score_mean,total_turns_mean,stage,board_index,"
+          "aerr_avg_mean,aerr_std_mean,err_avg_mean,err_std_mean,"
+          "uc_avg_mean,uc_std_mean,uc_sum_mean,"
+          "uc0_mean,uc1_mean,uc2_mean,uc3_mean,uc4_mean,uc5_mean,uc6_mean,uc7_mean,"
+          "ratio0_mean,ratio1_mean,ratio2_mean,ratio3_mean,ratio4_mean,ratio5_mean,ratio6_mean,ratio7_mean\n");
   // fflush(csv_fp);  // Removed for performance - OS buffering is sufficient
 }
 
@@ -270,18 +312,57 @@ void logTupleStats(int game_id, int score, int total_turns, const int* board)
   double ratio_std = sqrt(ratio_var / NUM_TRACKED);
   
   // CSV出力
-  fprintf(csv_fp, "%d,%d,%d,%d,%d,"
-          "%.6f,%.6f,%.6f,%.6f,"
-          "%.2f,%.2f,%6f,"
-          "%d,%d,%d,%d,%d,%d,%d,%d,"
-          "%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f\n",
-          game_id, score, total_turns, s, index,
-          aerr_avg, aerr_std, err_avg, err_std,
-          uc_avg, uc_std,uc_sum,
-          uc_vals[0], uc_vals[1], uc_vals[2], uc_vals[3],
-          uc_vals[4], uc_vals[5], uc_vals[6], uc_vals[7],
-          ratio_vals[0], ratio_vals[1], ratio_vals[2], ratio_vals[3],
-          ratio_vals[4], ratio_vals[5], ratio_vals[6], ratio_vals[7]);
+  tuple_block_games++;
+  tuple_sum_aerr_avg += aerr_avg;
+  tuple_sum_aerr_std += aerr_std;
+  tuple_sum_err_avg += err_avg;
+  tuple_sum_err_std += err_std;
+  tuple_sum_uc_avg += uc_avg;
+  tuple_sum_uc_std += uc_std;
+  tuple_sum_uc_sum += uc_sum;
+  tuple_sum_score += score;
+  tuple_sum_turns += total_turns;
+  for (int i = 0; i < NUM_TRACKED; i++) {
+    tuple_sum_uc_vals[i] += uc_vals[i];
+    tuple_sum_ratio_vals[i] += ratio_vals[i];
+  }
+
+  if (tuple_block_games >= TUPLE_LOG_BLOCK) {
+    const double denom = (double)tuple_block_games;
+    fprintf(csv_fp, "%d,%.2f,%.2f,%d,%d,"
+            "%.6f,%.6f,%.6f,%.6f,"
+            "%.2f,%.2f,%.6f,"
+            "%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,"
+            "%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f\n",
+            game_id, tuple_sum_score / denom, tuple_sum_turns / denom, s, index,
+            tuple_sum_aerr_avg / denom, tuple_sum_aerr_std / denom,
+            tuple_sum_err_avg / denom, tuple_sum_err_std / denom,
+            tuple_sum_uc_avg / denom, tuple_sum_uc_std / denom,
+            tuple_sum_uc_sum / denom,
+            tuple_sum_uc_vals[0] / denom, tuple_sum_uc_vals[1] / denom,
+            tuple_sum_uc_vals[2] / denom, tuple_sum_uc_vals[3] / denom,
+            tuple_sum_uc_vals[4] / denom, tuple_sum_uc_vals[5] / denom,
+            tuple_sum_uc_vals[6] / denom, tuple_sum_uc_vals[7] / denom,
+            tuple_sum_ratio_vals[0] / denom, tuple_sum_ratio_vals[1] / denom,
+            tuple_sum_ratio_vals[2] / denom, tuple_sum_ratio_vals[3] / denom,
+            tuple_sum_ratio_vals[4] / denom, tuple_sum_ratio_vals[5] / denom,
+            tuple_sum_ratio_vals[6] / denom, tuple_sum_ratio_vals[7] / denom);
+
+    tuple_block_games = 0;
+    tuple_sum_aerr_avg = 0.0;
+    tuple_sum_aerr_std = 0.0;
+    tuple_sum_err_avg = 0.0;
+    tuple_sum_err_std = 0.0;
+    tuple_sum_uc_avg = 0.0;
+    tuple_sum_uc_std = 0.0;
+    tuple_sum_uc_sum = 0.0;
+    tuple_sum_score = 0.0;
+    tuple_sum_turns = 0.0;
+    for (int i = 0; i < NUM_TRACKED; i++) {
+      tuple_sum_uc_vals[i] = 0.0;
+      tuple_sum_ratio_vals[i] = 0.0;
+    }
+  }
   // fflush(csv_fp);  // Removed for performance - buffered I/O is faster
 }
 
@@ -381,24 +462,15 @@ int main(int argc, char* argv[])
     int lastboard[9] = {0};
     while (true) { // ゲームのループ
       turn++;
-      state_t copy;
+      double evals[4];
+      int selected = select_move(state, eval_board, evals, true);
       double max_ev_r = -DBL_MAX;
-      int selected = -1;
       for (int d = 0; d < 4; d++) {
-	if (play(d, state, &copy)) {
-	  double ev_r = 0.0;
-	  {
-	    CpuAccum acc(cpu_ns_eval_block);
-	    ev_r = calcEv(copy.board) + (copy.score - state.score);
-	  }
-	  if (ev_r > max_ev_r) {
-	    max_ev_r = ev_r;
-	    selected = d;
-	  }
-	  // printf("d=%d, ev_r=%f, max_ev_r=%f\n",
-	  // 	 d, ev_r, max_ev_r);
-	}
+        if (evals[d] > max_ev_r) {
+          max_ev_r = evals[d];
+        }
       }
+
       // state.print();
       // printf("selected = %d\n", selected);
       if (selected == -1) {

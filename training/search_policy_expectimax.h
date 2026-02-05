@@ -15,6 +15,10 @@
 #define EXPECTIMAX_REWARD_WEIGHT 1.0
 #endif
 
+#ifndef EXPECTIMAX_CACHE_RESERVE
+#define EXPECTIMAX_CACHE_RESERVE 50000
+#endif
+
 using EvalFn = double (*)(const int*);
 
 static inline long long board_to_index_raw(const int board[9]) {
@@ -62,6 +66,13 @@ static inline std::vector<std::unordered_map<long long, double>>&
 expectimax_cache() {
   static std::vector<std::unordered_map<long long, double>> cache(
       EXPECTIMAX_PLY + 1);
+  static bool cache_inited = false;
+  if (!cache_inited) {
+    for (auto& m : cache) {
+      m.reserve(EXPECTIMAX_CACHE_RESERVE);
+    }
+    cache_inited = true;
+  }
   return cache;
 }
 

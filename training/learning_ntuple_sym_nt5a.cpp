@@ -15,6 +15,7 @@ using namespace std;
 namespace fs = std::filesystem;
 
 #include "Game2048_3_3.h"
+#include "search_policy.h"
 // #define NT4A  // Uncomment this line to use 4-tuples instead of 6-tuples
 // prev:
 // #ifdef NT4A
@@ -60,6 +61,10 @@ namespace fs = std::filesystem;
   } while (0)
 #endif
 
+#ifndef ENABLE_CPU_LOG
+#define ENABLE_CPU_LOG 0
+#endif
+
 int storage_c = 0;
 int global_seed = 0;
 FILE *csv_fp = nullptr;
@@ -72,21 +77,52 @@ static uint64_t cpu_ns_update_block = 0;
 static std::chrono::steady_clock::time_point process_wall_start;
 static std::chrono::steady_clock::time_point block_wall_start;
 
+#if ENABLE_CPU_LOG
 static inline uint64_t now_cpu_ns_process()
 {
   timespec ts{};
   clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &ts);
   return (uint64_t)ts.tv_sec * 1000000000ull + (uint64_t)ts.tv_nsec;
 }
+#else
+static inline uint64_t now_cpu_ns_process()
+{
+  return 0;
+}
+#endif
 
 struct CpuAccum {
   uint64_t &acc;
   uint64_t st;
-  explicit CpuAccum(uint64_t &a) : acc(a), st(now_cpu_ns_process()) {}
-  ~CpuAccum() { acc += (now_cpu_ns_process() - st); }
+  explicit CpuAccum(uint64_t &a) : acc(a), st(0) {
+#if ENABLE_CPU_LOG
+    st = now_cpu_ns_process();
+#endif
+  }
+  ~CpuAccum() {
+#if ENABLE_CPU_LOG
+    acc += (now_cpu_ns_process() - st);
+#endif
+  }
 };
 static fs::path output_dir;
 static string run_name;
+static const int TUPLE_LOG_BLOCK = 10000;
+static long long tuple_block_games = 0;
+static double tuple_sum_aerr = 0.0;
+static double tuple_sum_err = 0.0;
+static double tuple_sum_uc = 0.0;
+static long long tuple_sum_score = 0;
+static long long tuple_sum_turns = 0;
+
+static double eval_board(const int* board) {
+  CpuAccum acc(cpu_ns_eval_block);
+#ifdef SEARCH_POLICY_EXPECTIMAX
+  return calcEvSafe(board);
+#else
+  return calcEv(board);
+#endif
+}
 
 // 特定のタプルの特定の盤面状態を記録する設定
 #define TRACKED_TUPLE_ID 0  // 追跡するタプルID
@@ -184,7 +220,7 @@ void openCsvLog()
   }
   STDOUT_LOG("CSV log: %s\n", csv_path.string().c_str());
   // CSVヘッダー出力
-  fprintf(csv_fp, "game_id,score,total_turns,tuple_id,stage,board_index,aerr,err,updatecounts\n");
+  fprintf(csv_fp, "game_id,score_mean,total_turns_mean,tuple_id,stage,board_index,aerr_mean,err_mean,updatecounts_mean\n");
   // fflush(csv_fp);  // Removed for performance - OS buffering is sufficient
 }
 
@@ -231,8 +267,30 @@ void logTupleStats(int game_id, int score, int total_turns, const int* board)
     index = index * VARIATION_TILE + FIXED_BOARD[sympos[0][pos[TRACKED_TUPLE_ID][k]]];
   }
   
-  fprintf(csv_fp, "%d,%d,%d,%d,%d,%d,%.6f,%.6f,%d\n",
-          game_id, score, total_turns, TRACKED_TUPLE_ID, s, index, avg_aerr, avg_err, avg_updatecounts);
+  tuple_block_games++;
+  tuple_sum_aerr += avg_aerr;
+  tuple_sum_err += avg_err;
+  tuple_sum_uc += avg_updatecounts;
+  tuple_sum_score += score;
+  tuple_sum_turns += total_turns;
+
+  if (tuple_block_games >= TUPLE_LOG_BLOCK) {
+    const double denom = (double)tuple_block_games;
+    const double mean_aerr = tuple_sum_aerr / denom;
+    const double mean_err = tuple_sum_err / denom;
+    const double mean_uc = tuple_sum_uc / denom;
+    const double mean_score = (double)tuple_sum_score / denom;
+    const double mean_turns = (double)tuple_sum_turns / denom;
+    fprintf(csv_fp, "%d,%.2f,%.2f,%d,%d,%d,%.6f,%.6f,%.6f\n",
+            game_id, mean_score, mean_turns, TRACKED_TUPLE_ID, s, index,
+            mean_aerr, mean_err, mean_uc);
+    tuple_block_games = 0;
+    tuple_sum_aerr = 0.0;
+    tuple_sum_err = 0.0;
+    tuple_sum_uc = 0.0;
+    tuple_sum_score = 0;
+    tuple_sum_turns = 0;
+  }
   // fflush(csv_fp);  // Removed for performance - buffered I/O is faster
 }
 
@@ -321,24 +379,15 @@ int main(int argc, char* argv[])
     int lastboard[9] = {0};
     while (true) { // ゲームのループ
       turn++;
-      state_t copy;
+      double evals[4];
+      int selected = select_move(state, eval_board, evals, true);
       double max_ev_r = -DBL_MAX;
-      int selected = -1;
       for (int d = 0; d < 4; d++) {
-	if (play(d, state, &copy)) {
-	  double ev_r = 0.0;
-	  {
-	    CpuAccum acc(cpu_ns_eval_block);
-	    ev_r = calcEv(copy.board) + (copy.score - state.score);
-	  }
-	  if (ev_r > max_ev_r) {
-	    max_ev_r = ev_r;
-	    selected = d;
-	  }
-	  // printf("d=%d, ev_r=%f, max_ev_r=%f\n",
-	  // 	 d, ev_r, max_ev_r);
-	}
+        if (evals[d] > max_ev_r) {
+          max_ev_r = evals[d];
+        }
       }
+
       // state.print();
       // printf("selected = %d\n", selected);
       if (selected == -1) {
