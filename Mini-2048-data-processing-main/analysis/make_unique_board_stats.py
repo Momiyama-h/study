@@ -230,11 +230,13 @@ def main() -> int:
         raise SystemExit("ERROR: no games found in state.txt")
     kmin, kmax = min(global_max_vals), max(global_max_vals)
 
-    out_dir = (
-        Path(args.output_dir)
-        if args.output_dir
-        else Path("/HDD/momiyama2/data/study/analysis_outputs") / args.run_name / "board_stats"
-    )
+    if args.output_dir:
+        out_dir = Path(args.output_dir)
+    else:
+        out_root = Path("/HDD/momiyama2/data/study/analysis_outputs")
+        if str(board_root).endswith("board_data_v2"):
+            out_root = Path("/HDD/momiyama2/data/study/analysis_outputs_v2")
+        out_dir = out_root / args.run_name / "board_stats"
     out_dir.mkdir(parents=True, exist_ok=True)
 
     # unique_board_count_seed.csv

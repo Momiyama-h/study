@@ -217,6 +217,9 @@ python3 analysis/make_unique_board_stats.py \
 - `analysis_outputs/<run_name>/board_stats/unique_board_count_seed.csv`
 - `analysis_outputs/<run_name>/board_stats/max_tile_prob_seed.csv`
 - `analysis_outputs/<run_name>/board_stats/unique_board_count_nt_sym_mean.csv`
+補足:
+- `--output-dir` で出力先を変更できます。
+- `--board-root` が `board_data_v2` の場合はデフォルト出力が `analysis_outputs_v2` になります。
 
 ## Expectimax - `Expectimax/`
 
