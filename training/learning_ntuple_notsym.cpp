@@ -87,8 +87,6 @@ static double tuple_sum_uc_std = 0.0;
 static double tuple_sum_uc_sum = 0.0;
 static double tuple_sum_score = 0.0;
 static double tuple_sum_turns = 0.0;
-static double tuple_sum_uc_vals[TRACKED_TUPLE_COUNT] = {0};
-static double tuple_sum_ratio_vals[TRACKED_TUPLE_COUNT] = {0};
 
 #if ENABLE_CPU_LOG
 static inline uint64_t now_cpu_ns_process()
@@ -145,6 +143,8 @@ static constexpr int TRACKED_TUPLE_ID[] = {0, 1, 2, 3, 4, 5, 6, 7};
 #endif
 static constexpr int TRACKED_TUPLE_COUNT =
     sizeof(TRACKED_TUPLE_ID) / sizeof(TRACKED_TUPLE_ID[0]);
+static double tuple_sum_uc_vals[TRACKED_TUPLE_COUNT] = {0};
+static double tuple_sum_ratio_vals[TRACKED_TUPLE_COUNT] = {0};
 
 // 固定盤面状態を指定（9要素の配列）
 // 0: タイルがない、1-10: タイル値（2^1から2^10）
