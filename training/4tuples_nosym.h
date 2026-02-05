@@ -247,6 +247,23 @@ inline double calcEv(const int *board)
   return ev;
 }
 
+inline double calcEvSafe(const int *board)
+{
+  int s = calcStage(board);
+
+  double ev = 0;
+  #pragma GCC unroll 24
+  for (int i = 0; i < NUM_TUPLE; i++) {
+    int index = 0;
+    #pragma GCC unroll 4
+    for (int k = 0; k < TUPLE_SIZE; k++) {
+      index = index * VARIATION_TILE + board[pos[i][k]];
+    }
+    ev += (aerrs[s][i][index] == 0) ? 0 : evs[s][i][index];
+  }
+  return ev;
+}
+
 inline double calcErr(const int *board)
 {
   int s = calcStage(board);
