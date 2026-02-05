@@ -135,6 +135,23 @@ inline double calcEv(const int* board)
   return ev;
 }
 
+inline double calcEvSafe(const int* board)
+{
+  int s = calcStage(board);
+
+  double ev = 0;
+  for (int i = 0; i < NUM_TUPLE; i++) {
+    for (int j = 0; j < 8; j++) {
+      int index = 0;
+      for (int k = 0; k < TUPLE_SIZE; k++) {
+        index = index * VARIATION_TILE + board[sympos[j][pos[i][k]]];
+      }
+      ev += (aerrs[s][i][index] == 0) ? 0 : evs[s][i][index];
+    }
+  }
+  return ev;
+}
+
 inline double calcErr(const int* board)
 {
   int s = calcStage(board);
