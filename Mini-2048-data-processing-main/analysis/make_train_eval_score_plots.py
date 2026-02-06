@@ -265,7 +265,7 @@ def main() -> int:
                 mat = collect_matrix(stats, train_seeds, eval_seeds, t, s)
                 vmin, vmax = matrix_minmax(mat)
                 title = f"{args.run_name} NT{t}_{s} mean score"
-                for out_path in iter_outputs(f"heatmap_NT{t}_{s}"):
+                for out_path in iter_outputs(f"train_eval_heatmap_NT{t}_{s}"):
                     if plot_heatmap(
                         mat,
                         train_seeds,
@@ -298,7 +298,7 @@ def main() -> int:
                 continue
             max_abs = max(abs(v) for v in vals)
             title = f"{args.run_name} NT{t} (sym - notsym)"
-            for out_path in iter_outputs(f"heatmap_diff_NT{t}_sym_minus_notsym"):
+            for out_path in iter_outputs(f"train_eval_diff_heatmap_NT{t}_sym_minus_notsym"):
                 if plot_heatmap(
                     diff,
                     train_seeds,
@@ -325,7 +325,7 @@ def main() -> int:
                     xs.append(n_mean)
                     ys.append(s_mean)
             title = f"{args.run_name} NT{t} sym vs notsym"
-            for out_path in iter_outputs(f"scatter_sym_vs_notsym_NT{t}"):
+            for out_path in iter_outputs(f"train_eval_scatter_sym_vs_notsym_NT{t}"):
                 if plot_scatter(xs, ys, title, "notsym mean", "sym mean", out_path):
                     print(f"saved: {out_path}")
                 else:
@@ -343,7 +343,7 @@ def main() -> int:
                         continue
                     deltas[t].append(s_mean - n_mean)
         title = f"{args.run_name} sym - notsym (all train/eval)"
-        for out_path in iter_outputs("delta_box_sym_minus_notsym"):
+        for out_path in iter_outputs("train_eval_delta_box_sym_minus_notsym"):
             if plot_delta_box(deltas, title, out_path):
                 print(f"saved: {out_path}")
             else:
