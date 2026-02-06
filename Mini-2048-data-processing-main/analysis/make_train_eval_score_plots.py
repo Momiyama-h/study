@@ -174,9 +174,19 @@ def main() -> int:
     p.add_argument(
         "--out-dir",
         default="",
-        help="output dir (default: analysis_outputs/<run_name>/train_eval_plots)",
+        help="output dir for primary images (default: analysis_outputs/<run_name>/train_eval_plots)",
     )
-    p.add_argument("--ext", default="png", help="output extension (png/pdf)")
+    p.add_argument("--ext", default="png", help="primary output extension (default: png)")
+    p.add_argument(
+        "--pdf",
+        action="store_true",
+        help="also write PDF outputs into a separate directory",
+    )
+    p.add_argument(
+        "--pdf-out-dir",
+        default="",
+        help="output dir for PDF images (default: <out-dir>_pdf)",
+    )
     p.add_argument("--heatmap", action="store_true")
     p.add_argument("--diff-heatmap", action="store_true")
     p.add_argument("--scatter", action="store_true")
@@ -185,7 +195,9 @@ def main() -> int:
     args = p.parse_args()
 
     if not (args.heatmap or args.diff_heatmap or args.scatter or args.delta_box or args.all):
-        args.all = True
+        raise SystemExit(
+            "ERROR: no plot type specified. Use --heatmap/--diff-heatmap/--scatter/--delta-box or --all."
+        )
 
     board_root = Path(args.board_root)
     run_dir = board_root / args.run_name
@@ -232,6 +244,20 @@ def main() -> int:
     )
     out_dir.mkdir(parents=True, exist_ok=True)
 
+    pdf_out_dir: Optional[Path] = None
+    if args.pdf or args.pdf_out_dir:
+        if args.pdf_out_dir:
+            pdf_out_dir = Path(args.pdf_out_dir)
+        else:
+            pdf_out_dir = out_dir.parent / f"{out_dir.name}_pdf"
+        pdf_out_dir.mkdir(parents=True, exist_ok=True)
+
+    def iter_outputs(stem: str) -> List[Path]:
+        outputs = [out_dir / f"{stem}.{args.ext}"]
+        if pdf_out_dir:
+            outputs.append(pdf_out_dir / f"{stem}.pdf")
+        return outputs
+
     # heatmaps
     if args.all or args.heatmap:
         for t in tuples:
@@ -239,11 +265,19 @@ def main() -> int:
                 mat = collect_matrix(stats, train_seeds, eval_seeds, t, s)
                 vmin, vmax = matrix_minmax(mat)
                 title = f"{args.run_name} NT{t}_{s} mean score"
-                out_path = out_dir / f"heatmap_NT{t}_{s}.{args.ext}"
-                if plot_heatmap(mat, train_seeds, eval_seeds, title, out_path, vmin=vmin, vmax=vmax):
-                    print(f"saved: {out_path}")
-                else:
-                    print(f"skip (no data): {out_path}")
+                for out_path in iter_outputs(f"heatmap_NT{t}_{s}"):
+                    if plot_heatmap(
+                        mat,
+                        train_seeds,
+                        eval_seeds,
+                        title,
+                        out_path,
+                        vmin=vmin,
+                        vmax=vmax,
+                    ):
+                        print(f"saved: {out_path}")
+                    else:
+                        print(f"skip (no data): {out_path}")
 
     # diff heatmap (sym - notsym)
     if (args.all or args.diff_heatmap) and ("sym" in syms and "notsym" in syms):
@@ -264,18 +298,18 @@ def main() -> int:
                 continue
             max_abs = max(abs(v) for v in vals)
             title = f"{args.run_name} NT{t} (sym - notsym)"
-            out_path = out_dir / f"heatmap_diff_NT{t}_sym_minus_notsym.{args.ext}"
-            if plot_heatmap(
-                diff,
-                train_seeds,
-                eval_seeds,
-                title,
-                out_path,
-                cmap="coolwarm",
-                vmin=-max_abs,
-                vmax=max_abs,
-            ):
-                print(f"saved: {out_path}")
+            for out_path in iter_outputs(f"heatmap_diff_NT{t}_sym_minus_notsym"):
+                if plot_heatmap(
+                    diff,
+                    train_seeds,
+                    eval_seeds,
+                    title,
+                    out_path,
+                    cmap="coolwarm",
+                    vmin=-max_abs,
+                    vmax=max_abs,
+                ):
+                    print(f"saved: {out_path}")
 
     # scatter (sym vs notsym)
     if (args.all or args.scatter) and ("sym" in syms and "notsym" in syms):
@@ -291,11 +325,11 @@ def main() -> int:
                     xs.append(n_mean)
                     ys.append(s_mean)
             title = f"{args.run_name} NT{t} sym vs notsym"
-            out_path = out_dir / f"scatter_sym_vs_notsym_NT{t}.{args.ext}"
-            if plot_scatter(xs, ys, title, "notsym mean", "sym mean", out_path):
-                print(f"saved: {out_path}")
-            else:
-                print(f"skip (no data): {out_path}")
+            for out_path in iter_outputs(f"scatter_sym_vs_notsym_NT{t}"):
+                if plot_scatter(xs, ys, title, "notsym mean", "sym mean", out_path):
+                    print(f"saved: {out_path}")
+                else:
+                    print(f"skip (no data): {out_path}")
 
     # delta box
     if (args.all or args.delta_box) and ("sym" in syms and "notsym" in syms):
@@ -308,12 +342,12 @@ def main() -> int:
                     if s_mean is None or n_mean is None:
                         continue
                     deltas[t].append(s_mean - n_mean)
-        out_path = out_dir / f"delta_box_sym_minus_notsym.{args.ext}"
         title = f"{args.run_name} sym - notsym (all train/eval)"
-        if plot_delta_box(deltas, title, out_path):
-            print(f"saved: {out_path}")
-        else:
-            print(f"skip (no data): {out_path}")
+        for out_path in iter_outputs("delta_box_sym_minus_notsym"):
+            if plot_delta_box(deltas, title, out_path):
+                print(f"saved: {out_path}")
+            else:
+                print(f"skip (no data): {out_path}")
 
     return 0
 
