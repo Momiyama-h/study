@@ -463,7 +463,7 @@ int main(int argc, char* argv[])
     while (true) { // ゲームのループ
       turn++;
       double evals[4];
-      int selected = select_move(state, eval_board, evals, true);
+      int selected = select_move(state, eval_board, evals, false);
       double max_ev_r = -DBL_MAX;
       for (int d = 0; d < 4; d++) {
         if (evals[d] > max_ev_r) {
