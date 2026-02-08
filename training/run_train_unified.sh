@@ -77,7 +77,7 @@ case "$STAGE_MODE" in
 
 case "$POLICY" in
   greedy) policy_flags="";;
-  expecti3) policy_flags="-DSEARCH_POLICY_EXPECTIMAX -DEXPECTIMAX_PLY=3 -DEXPECTIMAX_CACHE_RESERVE=200000";;
+  expecti3) policy_flags="-DSEARCH_POLICY_EXPECTIMAX -DEXPECTIMAX_PLY=3";;
   *) echo "ERROR: invalid --policy: $POLICY (use greedy|expecti3)" >&2; exit 1;;
  esac
 if [[ "$POLICY" == "expecti3" ]]; then
