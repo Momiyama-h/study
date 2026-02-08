@@ -152,6 +152,42 @@ def plot_delta_box(
     return True
 
 
+def plot_delta_bar_by_nt(
+    tuples: List[str],
+    deltas_by_tuple: Dict[str, List[float]],
+    title: str,
+    out_path: Path,
+) -> bool:
+    labels: List[str] = []
+    means: List[float] = []
+    sds: List[float] = []
+    for t in sorted(tuples, key=lambda x: int(x)):
+        vals = deltas_by_tuple.get(t, [])
+        if not vals:
+            continue
+        labels.append(f"NT{t}")
+        mean = sum(vals) / len(vals)
+        if len(vals) > 1:
+            var = sum((v - mean) ** 2 for v in vals) / (len(vals) - 1)
+            sd = math.sqrt(var)
+        else:
+            sd = 0.0
+        means.append(mean)
+        sds.append(sd)
+    if not means:
+        return False
+    fig, ax = plt.subplots(figsize=(6, 4))
+    ax.bar(labels, means, yerr=sds, capsize=4, alpha=0.8)
+    ax.axhline(0.0, color="gray", linestyle="--", linewidth=1)
+    ax.set_ylabel("sym - notsym (eval-avg, per train_seed)")
+    ax.set_title(title)
+    fig.tight_layout()
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out_path, dpi=150)
+    plt.close(fig)
+    return True
+
+
 def main() -> int:
     p = argparse.ArgumentParser(
         description="train_seed×eval_seed のスコアから可視化図を作成"
@@ -159,7 +195,7 @@ def main() -> int:
     p.add_argument("--run-name", required=True)
     p.add_argument(
         "--board-root",
-        default="/HDD/momiyama2/data/study/board_data",
+        default="/HDD/momiyama2/data/study/board_data_v2",
         help="board_data root",
     )
     p.add_argument("--train-seed-start", type=int, default=None)
@@ -191,12 +227,24 @@ def main() -> int:
     p.add_argument("--diff-heatmap", action="store_true")
     p.add_argument("--scatter", action="store_true")
     p.add_argument("--delta-box", action="store_true")
+    p.add_argument(
+        "--delta-nt",
+        action="store_true",
+        help="sym-notsym差分をeval_seed平均後にtrain_seedごとに計算し、NT別の平均±SDを棒グラフで出力",
+    )
     p.add_argument("--all", action="store_true", help="generate all plots")
     args = p.parse_args()
 
-    if not (args.heatmap or args.diff_heatmap or args.scatter or args.delta_box or args.all):
+    if not (
+        args.heatmap
+        or args.diff_heatmap
+        or args.scatter
+        or args.delta_box
+        or args.delta_nt
+        or args.all
+    ):
         raise SystemExit(
-            "ERROR: no plot type specified. Use --heatmap/--diff-heatmap/--scatter/--delta-box or --all."
+            "ERROR: no plot type specified. Use --heatmap/--diff-heatmap/--scatter/--delta-box/--delta-nt or --all."
         )
 
     board_root = Path(args.board_root)
@@ -238,7 +286,7 @@ def main() -> int:
     out_dir = (
         Path(args.out_dir)
         if args.out_dir
-        else Path("/HDD/momiyama2/data/study/analysis_outputs")
+        else Path("/HDD/momiyama2/data/study/analysis_outputs_v2")
         / args.run_name
         / "train_eval_plots"
     )
@@ -345,6 +393,32 @@ def main() -> int:
         title = f"{args.run_name} sym - notsym (all train/eval)"
         for out_path in iter_outputs("train_eval_delta_box_sym_minus_notsym"):
             if plot_delta_box(deltas, title, out_path):
+                print(f"saved: {out_path}")
+            else:
+                print(f"skip (no data): {out_path}")
+
+    # delta bar by NT (eval_seed平均 -> train_seed差分)
+    if (args.all or args.delta_nt) and ("sym" in syms and "notsym" in syms):
+        deltas_by_nt: Dict[str, List[float]] = {t: [] for t in tuples}
+        for t in tuples:
+            for tr in train_seeds:
+                sym_vals: List[float] = []
+                ns_vals: List[float] = []
+                for ev in eval_seeds:
+                    s_mean, _sd, _n = stats.get((tr, ev, t, "sym"), (None, None, 0))
+                    n_mean, _sd2, _n2 = stats.get((tr, ev, t, "notsym"), (None, None, 0))
+                    if s_mean is not None:
+                        sym_vals.append(s_mean)
+                    if n_mean is not None:
+                        ns_vals.append(n_mean)
+                if not sym_vals or not ns_vals:
+                    continue
+                sym_avg = sum(sym_vals) / len(sym_vals)
+                ns_avg = sum(ns_vals) / len(ns_vals)
+                deltas_by_nt[t].append(sym_avg - ns_avg)
+        title = f"{args.run_name} sym - notsym (eval-avg, by train_seed)"
+        for out_path in iter_outputs("train_eval_delta_bar_by_nt"):
+            if plot_delta_bar_by_nt(tuples, deltas_by_nt, title, out_path):
                 print(f"saved: {out_path}")
             else:
                 print(f"skip (no data): {out_path}")
