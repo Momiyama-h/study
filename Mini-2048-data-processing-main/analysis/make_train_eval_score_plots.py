@@ -92,7 +92,8 @@ def plot_heatmap(
     ax.set_yticklabels(train_seeds)
     ax.set_xlabel("eval_seed")
     ax.set_ylabel("train_seed")
-    ax.set_title(title)
+    if title:
+        ax.set_title(title)
     fig.colorbar(im, ax=ax, shrink=0.8)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     fig.tight_layout()
@@ -118,7 +119,8 @@ def plot_scatter(
     ax.plot([lo, hi], [lo, hi], color="gray", linestyle="--", linewidth=1)
     ax.set_xlabel(x_label)
     ax.set_ylabel(y_label)
-    ax.set_title(title)
+    if title:
+        ax.set_title(title)
     fig.tight_layout()
     out_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out_path, dpi=150)
@@ -144,7 +146,8 @@ def plot_delta_box(
     ax.boxplot(data, labels=labels, showfliers=False)
     ax.axhline(0.0, color="gray", linestyle="--", linewidth=1)
     ax.set_ylabel("sym - notsym")
-    ax.set_title(title)
+    if title:
+        ax.set_title(title)
     fig.tight_layout()
     out_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out_path, dpi=150)
@@ -180,7 +183,8 @@ def plot_delta_bar_by_nt(
     ax.bar(labels, means, yerr=sds, capsize=4, alpha=0.8)
     ax.axhline(0.0, color="gray", linestyle="--", linewidth=1)
     ax.set_ylabel("sym - notsym (eval-avg, per train_seed)")
-    ax.set_title(title)
+    if title:
+        ax.set_title(title)
     fig.tight_layout()
     out_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out_path, dpi=150)
@@ -232,6 +236,7 @@ def main() -> int:
         action="store_true",
         help="sym-notsym差分をeval_seed平均後にtrain_seedごとに計算し、NT別の平均±SDを棒グラフで出力",
     )
+    p.add_argument("--no-title", action="store_true", help="omit titles in plots")
     p.add_argument("--all", action="store_true", help="generate all plots")
     args = p.parse_args()
 
@@ -312,7 +317,7 @@ def main() -> int:
             for s in syms:
                 mat = collect_matrix(stats, train_seeds, eval_seeds, t, s)
                 vmin, vmax = matrix_minmax(mat)
-                title = f"{args.run_name} NT{t}_{s} mean score"
+                title = "" if args.no_title else f"{args.run_name} NT{t}_{s} mean score"
                 for out_path in iter_outputs(f"train_eval_heatmap_NT{t}_{s}"):
                     if plot_heatmap(
                         mat,
@@ -345,7 +350,7 @@ def main() -> int:
                 print(f"skip (no data): diff heatmap NT{t}")
                 continue
             max_abs = max(abs(v) for v in vals)
-            title = f"{args.run_name} NT{t} (sym - notsym)"
+            title = "" if args.no_title else f"{args.run_name} NT{t} (sym - notsym)"
             for out_path in iter_outputs(f"train_eval_diff_heatmap_NT{t}_sym_minus_notsym"):
                 if plot_heatmap(
                     diff,
@@ -372,7 +377,7 @@ def main() -> int:
                         continue
                     xs.append(n_mean)
                     ys.append(s_mean)
-            title = f"{args.run_name} NT{t} sym vs notsym"
+            title = "" if args.no_title else f"{args.run_name} NT{t} sym vs notsym"
             for out_path in iter_outputs(f"train_eval_scatter_sym_vs_notsym_NT{t}"):
                 if plot_scatter(xs, ys, title, "notsym mean", "sym mean", out_path):
                     print(f"saved: {out_path}")
@@ -390,7 +395,7 @@ def main() -> int:
                     if s_mean is None or n_mean is None:
                         continue
                     deltas[t].append(s_mean - n_mean)
-        title = f"{args.run_name} sym - notsym (all train/eval)"
+        title = "" if args.no_title else f"{args.run_name} sym - notsym (all train/eval)"
         for out_path in iter_outputs("train_eval_delta_box_sym_minus_notsym"):
             if plot_delta_box(deltas, title, out_path):
                 print(f"saved: {out_path}")
@@ -416,7 +421,7 @@ def main() -> int:
                 sym_avg = sum(sym_vals) / len(sym_vals)
                 ns_avg = sum(ns_vals) / len(ns_vals)
                 deltas_by_nt[t].append(sym_avg - ns_avg)
-        title = f"{args.run_name} sym - notsym (eval-avg, by train_seed)"
+        title = "" if args.no_title else f"{args.run_name} sym - notsym (eval-avg, by train_seed)"
         for out_path in iter_outputs("train_eval_delta_bar_by_nt"):
             if plot_delta_bar_by_nt(tuples, deltas_by_nt, title, out_path):
                 print(f"saved: {out_path}")
