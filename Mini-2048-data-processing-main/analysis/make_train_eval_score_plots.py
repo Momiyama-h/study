@@ -192,6 +192,71 @@ def plot_delta_bar_by_nt(
     return True
 
 
+def plot_mean_bar_by_nt_sym(
+    tuples: List[str],
+    syms: List[str],
+    means_by_tuple_sym: Dict[Tuple[str, str], List[float]],
+    title: str,
+    out_path: Path,
+) -> bool:
+    ordered_tuples = sorted(tuples, key=lambda x: int(x))
+    labels = [f"NT{t}" for t in ordered_tuples]
+    if not labels:
+        return False
+    # compute mean/sd per (tuple,sym)
+    stats: Dict[Tuple[str, str], Tuple[float, float]] = {}
+    for t in ordered_tuples:
+        for s in syms:
+            vals = means_by_tuple_sym.get((t, s), [])
+            if not vals:
+                continue
+            mean = sum(vals) / len(vals)
+            if len(vals) > 1:
+                var = sum((v - mean) ** 2 for v in vals) / (len(vals) - 1)
+                sd = math.sqrt(var)
+            else:
+                sd = 0.0
+            stats[(t, s)] = (mean, sd)
+    if not stats:
+        return False
+
+    fig, ax = plt.subplots(figsize=(7, 4))
+    x = list(range(len(ordered_tuples)))
+    width = 0.8 / max(len(syms), 1)
+    offsets = [(-0.4 + width / 2) + i * width for i in range(len(syms))]
+    for i, s in enumerate(syms):
+        means: List[float] = []
+        sds: List[float] = []
+        for t in ordered_tuples:
+            mean_sd = stats.get((t, s))
+            if mean_sd:
+                mean, sd = mean_sd
+            else:
+                mean, sd = 0.0, 0.0
+            means.append(mean)
+            sds.append(sd)
+        ax.bar(
+            [xi + offsets[i] for xi in x],
+            means,
+            width=width,
+            yerr=sds,
+            capsize=3,
+            alpha=0.8,
+            label=s,
+        )
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels)
+    ax.set_ylabel("mean score (eval-avg, per train_seed)")
+    if title:
+        ax.set_title(title)
+    ax.legend()
+    fig.tight_layout()
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out_path, dpi=150)
+    plt.close(fig)
+    return True
+
+
 def main() -> int:
     p = argparse.ArgumentParser(
         description="train_seed×eval_seed のスコアから可視化図を作成"
@@ -236,6 +301,11 @@ def main() -> int:
         action="store_true",
         help="sym-notsym差分をeval_seed平均後にtrain_seedごとに計算し、NT別の平均±SDを棒グラフで出力",
     )
+    p.add_argument(
+        "--mean-bar",
+        action="store_true",
+        help="NT×sym の平均±SD(評価seed平均→train_seed集計)の棒グラフを出力",
+    )
     p.add_argument("--no-title", action="store_true", help="omit titles in plots")
     p.add_argument("--all", action="store_true", help="generate all plots")
     args = p.parse_args()
@@ -246,10 +316,11 @@ def main() -> int:
         or args.scatter
         or args.delta_box
         or args.delta_nt
+        or args.mean_bar
         or args.all
     ):
         raise SystemExit(
-            "ERROR: no plot type specified. Use --heatmap/--diff-heatmap/--scatter/--delta-box/--delta-nt or --all."
+            "ERROR: no plot type specified. Use --heatmap/--diff-heatmap/--scatter/--delta-box/--delta-nt/--mean-bar or --all."
         )
 
     board_root = Path(args.board_root)
@@ -424,6 +495,28 @@ def main() -> int:
         title = "" if args.no_title else f"{args.run_name} sym - notsym (eval-avg, by train_seed)"
         for out_path in iter_outputs("train_eval_delta_bar_by_nt"):
             if plot_delta_bar_by_nt(tuples, deltas_by_nt, title, out_path):
+                print(f"saved: {out_path}")
+            else:
+                print(f"skip (no data): {out_path}")
+
+    # mean bar by NT and sym (eval_seed平均 -> train_seed集計)
+    if args.all or args.mean_bar:
+        means_by_tuple_sym: Dict[Tuple[str, str], List[float]] = {}
+        for t in tuples:
+            for s in syms:
+                vals: List[float] = []
+                for tr in train_seeds:
+                    eval_vals: List[float] = []
+                    for ev in eval_seeds:
+                        mean, _sd, _n = stats.get((tr, ev, t, s), (None, None, 0))
+                        if mean is not None:
+                            eval_vals.append(mean)
+                    if eval_vals:
+                        vals.append(sum(eval_vals) / len(eval_vals))
+                means_by_tuple_sym[(t, s)] = vals
+        title = "" if args.no_title else f"{args.run_name} mean score by NT/sym"
+        for out_path in iter_outputs("train_eval_mean_bar_by_nt"):
+            if plot_mean_bar_by_nt_sym(tuples, syms, means_by_tuple_sym, title, out_path):
                 print(f"saved: {out_path}")
             else:
                 print(f"skip (no data): {out_path}")
