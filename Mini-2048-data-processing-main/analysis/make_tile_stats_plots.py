@@ -101,7 +101,7 @@ def aggregate_quantiles(
             tuples.append(t)
         if s not in syms:
             syms.append(s)
-        for q in ("median", "p75", "p90"):
+        for q in ("p25", "median", "p75", "p90"):
             v = parse_float(r.get(q, ""))
             if v is None:
                 continue
@@ -191,12 +191,21 @@ def plot_quant_lines(
         return False
     x = list(range(len(tuples)))
     fig, ax = plt.subplots(figsize=(7, 4))
-    for q, label in [("median", "median"), ("p75", "p75"), ("p90", "p90")]:
+    series = [
+        ("p25", "p25", "s", "--", -0.06),
+        ("median", "median", "o", "-", 0.0),
+        ("p75", "p75", "^", ":", 0.03),
+        ("p90", "p90", "D", "-.", 0.06),
+    ]
+    for q, label, marker, linestyle, offset in series:
         ys: List[float] = []
         for t in tuples:
             v = stats.get((t, sym, q))
             ys.append(v if v is not None else float("nan"))
-        ax.plot(x, ys, marker="o", label=label)
+        if all(math.isnan(v) for v in ys):
+            continue
+        xs = [xi + offset for xi in x]
+        ax.plot(xs, ys, marker=marker, linestyle=linestyle, label=label)
     ax.set_xticks(x)
     ax.set_xticklabels([f"NT{t}" for t in tuples])
     ax.set_ylabel("max tile exponent")

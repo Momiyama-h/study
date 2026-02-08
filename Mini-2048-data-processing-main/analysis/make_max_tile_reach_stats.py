@@ -226,6 +226,7 @@ def main() -> int:
             "sym",
             "n_games",
             "median",
+            "p25",
             "p75",
             "p90",
         ]
@@ -254,7 +255,7 @@ def main() -> int:
                         state = iter_state_path(run_dir, tr, ev, t, s, args.state_file)
                         if not state.exists():
                             row_reach = [tr, ev, f"NT{t}", s, 0, args.reach_exp, ""]
-                            row_quant = [tr, ev, f"NT{t}", s, 0, "", "", ""]
+                            row_quant = [tr, ev, f"NT{t}", s, 0, "", "", "", ""]
                             w_reach.writerow(row_reach)
                             w_quant.writerow(row_quant)
                             if args.split_nt:
@@ -265,7 +266,7 @@ def main() -> int:
                         n = len(max_exps)
                         if n == 0:
                             row_reach = [tr, ev, f"NT{t}", s, 0, args.reach_exp, ""]
-                            row_quant = [tr, ev, f"NT{t}", s, 0, "", "", ""]
+                            row_quant = [tr, ev, f"NT{t}", s, 0, "", "", "", ""]
                             w_reach.writerow(row_reach)
                             w_quant.writerow(row_quant)
                             if args.split_nt:
@@ -275,10 +276,11 @@ def main() -> int:
                         reach = sum(1 for v in max_exps if v >= args.reach_exp) / n
                         vals = sorted(max_exps)
                         med = quantile_sorted(vals, 0.5)
+                        p25 = quantile_sorted(vals, 0.25)
                         p75 = quantile_sorted(vals, 0.75)
                         p90 = quantile_sorted(vals, 0.9)
                         row_reach = [tr, ev, f"NT{t}", s, n, args.reach_exp, f"{reach:.6f}"]
-                        row_quant = [tr, ev, f"NT{t}", s, n, med, p75, p90]
+                        row_quant = [tr, ev, f"NT{t}", s, n, med, p25, p75, p90]
                         w_reach.writerow(row_reach)
                         w_quant.writerow(row_quant)
                         if args.split_nt:
