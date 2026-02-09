@@ -284,6 +284,12 @@ def main() -> int:
         if not delta_curves:
             continue
 
+        min_len = min(len(c) for c in delta_curves)
+        if min_len == 0:
+            continue
+        if any(len(c) != min_len for c in delta_curves):
+            delta_curves = [c[:min_len] for c in delta_curves]
+
         arr = np.array(delta_curves, dtype=float)
         n_train, n_prog = arr.shape
         mean = arr.mean(axis=0)
