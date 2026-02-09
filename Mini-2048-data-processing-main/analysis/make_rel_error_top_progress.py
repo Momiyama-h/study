@@ -5,7 +5,7 @@ import re
 import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
-
+from graph import common as gcommon
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.append(str(ROOT))
@@ -109,7 +109,8 @@ def main() -> int:
     ap.add_argument("--top-n", type=int, default=10)
     ap.add_argument("--output", default="", help="output csv path")
     args = ap.parse_args()
-
+    board_root = Path(args.board_root).resolve()
+    gcommon.board_dir = board_root
     board_root = Path(args.board_root)
     run_dir = board_root / args.run_name
     if not run_dir.exists():
