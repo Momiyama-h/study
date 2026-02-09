@@ -74,6 +74,12 @@
 - `run_eval_scores_from_dat.sh`（dat を再プレイ）
 - `export_score_averages.py` / `run_export_score_averages_for_run_name.sh`（学習ログ）
 
+### 生存率差分（seed構造の統計）
+- `Mini-2048-data-processing-main/analysis/make_survival_diff_stats.py`
+  - sym/notsym の survival curve 差分を train_seed 単位で集計
+  - 出力: surv_diff_by_train_seed_long.csv / surv_diff_summary.csv / surv_diff_auc.csv
+  - 図: surv_diff_curve_NT*.{png|pdf}, surv_diff_auc_NT*.{png|pdf}
+
 ### グラフ生成（training_logs 由来）
 - `run_plot_scores_for_run_name.sh`
   - `training_logs/<run>/seed*/NT*_*/log_*tuple_*_seed*.txt` から sym/notsym 比較を作図
