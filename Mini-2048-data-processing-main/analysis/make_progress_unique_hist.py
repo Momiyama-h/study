@@ -272,12 +272,9 @@ def main() -> int:
             ax.set_ylabel("count")
             if not args.no_title:
                 if args.use_ratio:
-                ax.set_title(f"NT{t} unique_ratio (progress {pmin}-{pmax})")
-            else:
-                if args.use_ratio:
-                ax.set_title(f"NT{t} unique_ratio (progress {pmin}-{pmax})")
-            else:
-                ax.set_title(f"NT{t} unique boards (progress {pmin}-{pmax})")
+                    ax.set_title(f"NT{t} unique_ratio (progress {pmin}-{pmax})")
+                else:
+                    ax.set_title(f"NT{t} unique boards (progress {pmin}-{pmax})")
             ax.legend()
             fig.tight_layout()
             fig.savefig(pdf_dir / f"progress_unique_hist_NT{t}.pdf", bbox_inches="tight")
