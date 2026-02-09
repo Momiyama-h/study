@@ -254,9 +254,6 @@ def main() -> int:
             if args.use_ratio:
                 ax.set_title(f"NT{t} unique_ratio (progress {pmin}-{pmax})")
             else:
-                if args.use_ratio:
-                ax.set_title(f"NT{t} unique_ratio (progress {pmin}-{pmax})")
-            else:
                 ax.set_title(f"NT{t} unique boards (progress {pmin}-{pmax})")
         ax.legend()
         fig.tight_layout()
