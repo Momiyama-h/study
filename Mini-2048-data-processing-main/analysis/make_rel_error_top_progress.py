@@ -3,13 +3,14 @@ import argparse
 import os
 import re
 import sys
+import statistics
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
-from graph import common as gcommon
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.append(str(ROOT))
 
+from graph import common as gcommon  # noqa: E402
 from graph.common import PlayerData, tuple_label  # noqa: E402
 
 
@@ -90,7 +91,7 @@ def list_eval_seeds(nt_dir: Path) -> List[int]:
 
 def main() -> int:
     ap = argparse.ArgumentParser(
-        description="err-relが大きいprogressをゲームごとに上位抽出"
+        description="err-relが大きいprogressを集計して上位抽出"
     )
     ap.add_argument("--run-name", required=True)
     ap.add_argument(
@@ -107,11 +108,29 @@ def main() -> int:
     ap.add_argument("--tuples", default="", help="comma-separated tuples (default: auto)")
     ap.add_argument("--sym-list", default="", help="comma-separated sym list (default: auto)")
     ap.add_argument("--top-n", type=int, default=10)
+    ap.add_argument(
+        "--mode",
+        choices=["mean", "bad-rate"],
+        default="mean",
+        help="ranking mode: mean (default) or bad-rate",
+    )
+    ap.add_argument(
+        "--bad-threshold",
+        type=float,
+        default=-0.8,
+        help="threshold for bad-rate (err-rel <= threshold)",
+    )
+    ap.add_argument(
+        "--min-count",
+        type=int,
+        default=1,
+        help="min samples per progress",
+    )
     ap.add_argument("--output", default="", help="output csv path")
     args = ap.parse_args()
+
     board_root = Path(args.board_root).resolve()
     gcommon.board_dir = board_root
-    board_root = Path(args.board_root)
     run_dir = board_root / args.run_name
     if not run_dir.exists():
         raise SystemExit(f"ERROR: run_name dir not found: {run_dir}")
@@ -176,11 +195,12 @@ def main() -> int:
                 "eval_seed",
                 "tuple",
                 "sym",
-                "game_id",
-                "rank",
                 "progress",
-                "rel_error",
-                "abs_rel_error",
+                "rank",
+                "n",
+                "mean",
+                "median",
+                "bad_rate",
             ]
         )
 
@@ -209,34 +229,47 @@ def main() -> int:
                         pp_games = parse_eval_games(pp_path)
                         pr_games = parse_eval_games(pr_path)
                         game_n = min(len(pp_games), len(pr_games))
+
+                        per_prg: Dict[int, List[float]] = {}
                         for i in range(game_n):
-                            pp_gid, pp_steps = pp_games[i]
-                            pr_gid, pr_steps = pr_games[i]
-                            gid = pp_gid if pp_gid is not None else (pr_gid if pr_gid is not None else i + 1)
+                            _pp_gid, pp_steps = pp_games[i]
+                            _pr_gid, pr_steps = pr_games[i]
                             step_n = min(len(pp_steps), len(pr_steps))
-                            best_by_prg: Dict[int, float] = {}
                             for j in range(step_n):
                                 pp_evals, pp_prg = pp_steps[j]
                                 pr_evals, _pr_prg = pr_steps[j]
                                 rel = calc_rel_error(pp_evals, pr_evals)
-                                prev = best_by_prg.get(pp_prg)
-                                if prev is None or abs(rel) > abs(prev):
-                                    best_by_prg[pp_prg] = rel
-                            ranked = sorted(best_by_prg.items(), key=lambda x: abs(x[1]), reverse=True)
-                            for rank, (prg, rel) in enumerate(ranked[: args.top_n], start=1):
-                                w.writerow(
-                                    [
-                                        tr,
-                                        "" if ev is None else ev,
-                                        f"NT{tuple_label(pd, int(t))}",
-                                        s,
-                                        gid,
-                                        rank,
-                                        prg,
-                                        f"{rel:.6f}",
-                                        f"{abs(rel):.6f}",
-                                    ]
-                                )
+                                per_prg.setdefault(pp_prg, []).append(rel)
+
+                        stats = []
+                        for prg, vals in per_prg.items():
+                            if len(vals) < args.min_count:
+                                continue
+                            mean_v = statistics.fmean(vals)
+                            median_v = statistics.median(vals)
+                            bad_rate = sum(1 for v in vals if v <= args.bad_threshold) / len(vals)
+                            stats.append((prg, len(vals), mean_v, median_v, bad_rate))
+
+                        if args.mode == "bad-rate":
+                            stats.sort(key=lambda x: (-x[4], x[2]))
+                        else:
+                            stats.sort(key=lambda x: (x[2], -x[4]))
+
+                        for rank, (prg, n, mean_v, median_v, bad_rate) in enumerate(stats[: args.top_n], start=1):
+                            w.writerow(
+                                [
+                                    tr,
+                                    "" if ev is None else ev,
+                                    f"NT{tuple_label(pd, int(t))}",
+                                    s,
+                                    prg,
+                                    rank,
+                                    n,
+                                    f"{mean_v:.6f}",
+                                    f"{median_v:.6f}",
+                                    f"{bad_rate:.6f}",
+                                ]
+                            )
 
     print(f"saved: {out_path}")
     return 0
