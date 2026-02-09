@@ -11,6 +11,7 @@ from . import (
     boxplot,
     error_abs,
     error_rel,
+    error_mae,
     histgram,
     scatter,
     survival,
@@ -220,6 +221,10 @@ arg_parser.add_argument(
         "err-rel-mean",
         "err-rel-mean-symdiff",
         "err-rel",
+        "err-mae",
+        "err-mae-symdiff",
+        "err-mae-mean",
+        "err-mae-mean-symdiff",
         "err-abs-symdiff",
         "err-abs-mean",
         "err-abs-mean-symdiff",
@@ -488,6 +493,30 @@ elif args.graph == "err-rel-mean-symdiff":
     result = error_rel.calc_rel_error_mean_data(
         player_data_list=player_data_list,
     )
+elif args.graph == "err-mae":
+    output_name = args.output if args.output else "error_mae.pdf"
+
+    result = error_mae.calc_mae_data(
+        player_data_list=player_data_list,
+    )
+elif args.graph == "err-mae-symdiff":
+    output_name = args.output if args.output else "error_mae_symdiff.pdf"
+
+    result = error_mae.calc_mae_symdiff_data(
+        player_data_list=player_data_list,
+    )
+elif args.graph == "err-mae-mean":
+    output_name = args.output if args.output else "error_mae_mean.pdf"
+
+    result = error_mae.calc_mae_mean_data(
+        player_data_list=player_data_list,
+    )
+elif args.graph == "err-mae-mean-symdiff":
+    output_name = args.output if args.output else "error_mae_mean_symdiff.pdf"
+
+    result = error_mae.calc_mae_mean_data(
+        player_data_list=player_data_list,
+    )
 elif args.graph == "err-abs":
     output_name = args.output if args.output else "error_abs.pdf"
 
@@ -652,6 +681,7 @@ if result:
         "acc-mean-symdiff",
         "err-abs-mean-symdiff",
         "err-rel-mean-symdiff",
+        "err-mae-mean-symdiff",
     ):
         plt.axhline(0, color="gray", linestyle="dashed", linewidth=1)
         plt.grid(True, linestyle=":", linewidth=0.5)
@@ -660,6 +690,8 @@ if result:
         "err-abs-symdiff",
         "err-rel-mean",
         "err-rel-symdiff",
+        "err-mae-mean",
+        "err-mae-symdiff",
         "surv-mean-symdiff",
         "surv",
         "surv-symdiff",
@@ -683,6 +715,9 @@ if result:
             "err-rel-mean",
             "err-rel-symdiff",
             "err-rel-mean-symdiff",
+            "err-mae-mean",
+            "err-mae-symdiff",
+            "err-mae-mean-symdiff",
             "surv-mean-symdiff",
             "surv-mean",
             "surv-diff-mean",

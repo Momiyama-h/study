@@ -58,6 +58,11 @@
 - `run_train_nt4a_trainonly.sh`
 - `run_train_nt5a_trainonly.sh`
 
+### グラフ生成（board_data 由来）
+- `Mini-2048-data-processing-main/graph`（`python3 -m graph`）
+  - 追加: `err-mae`, `err-mae-mean`, `err-mae-symdiff`, `err-mae-mean-symdiff`
+  - 依存: `eval.txt` + `pp-eval-state.txt`（各 seed/NT/eval_seed ディレクトリ直下）
+
 ### 学習ログから平均/推移を作る
 - `plot_score_log_mean.py` / `run_plot_score_log_mean.sh`
   - 学習中の `log_score_*.csv` を集計し、update/cpu 軸の平均推移を出力

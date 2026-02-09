@@ -128,6 +128,10 @@ def moving_average(data, window_size)
 | `acc-diff` | 正確性差分 |
 | `err-rel` | 相対誤差 |
 | `err-abs` | 絶対誤差 |
+| `err-mae` | 絶対誤差（MAE: |PP(best) − PP(chosen)|） |
+| `err-mae-mean` | err-mae の seed 平均 |
+| `err-mae-symdiff` | sym/notsym を同一図に（seed 別） |
+| `err-mae-mean-symdiff` | sym/notsym の seed 平均 |
 | `surv` | 生存率 |
 | `surv-diff` | 生存率(パーフェクトプレイヤとの差) |
 | `scatter` | パーフェクトプレイヤとの散布図 |
@@ -212,3 +216,6 @@ PP評価ファイルは以下を参照できる:
 - [x] surv diff を出せるようにする。
 - [ ] グラフ設定を行えるようにする。
 - [ ] ファイル指定を tkinter でグラフィカルに行えるようにする。
+
+
+補足: err-abs / err-rel / err-mae 系は各ディレクトリに `eval.txt` と `pp-eval-state.txt` が必要です。
