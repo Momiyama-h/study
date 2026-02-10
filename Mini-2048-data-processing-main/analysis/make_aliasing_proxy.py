@@ -34,6 +34,7 @@ except Exception:
 
 
 GAMEOVER_RE = re.compile(r"score:\s*(\d+)")
+PROGRESS_RE = re.compile(r"progress:\s*(\d+)")
 NT_DIR_RE = re.compile(r"^NT(?P<tuple>\d+)_(?P<sym>sym|notsym)$")
 
 
@@ -75,6 +76,8 @@ def parse_args() -> argparse.Namespace:
         default=9,
         help="tile exponent for reach-exp performance",
     )
+    p.add_argument("--progress-start", type=int, default=None)
+    p.add_argument("--progress-end", type=int, default=None)
     p.add_argument("--occupancy", action="store_true", help="compute occupancy")
     p.add_argument(
         "--nt4a",
@@ -136,9 +139,14 @@ def canonical_board(board: Sequence[int]) -> Tuple[int, ...]:
     return min(apply_map(board, mp) for mp in d4_maps())
 
 
-def parse_final_boards(state_path: Path) -> Tuple[List[Tuple[int, ...]], List[int]]:
+def parse_final_boards(
+    state_path: Path,
+    progress_start: Optional[int] = None,
+    progress_end: Optional[int] = None,
+) -> Tuple[List[Tuple[int, ...]], List[int], List[int]]:
     boards: List[Tuple[int, ...]] = []
     scores: List[int] = []
+    progresses: List[int] = []
     last_board: Optional[Tuple[int, ...]] = None
     with state_path.open("r", encoding="utf-8") as f:
         for line in f:
@@ -147,12 +155,29 @@ def parse_final_boards(state_path: Path) -> Tuple[List[Tuple[int, ...]], List[in
                 continue
             if line.startswith("gameover_turn:"):
                 if last_board is not None:
-                    boards.append(last_board)
                     m = GAMEOVER_RE.search(line)
-                    if m:
-                        scores.append(int(m.group(1)))
+                    p = PROGRESS_RE.search(line)
+                    score = int(m.group(1)) if m else 0
+                    if p:
+                        prog = int(p.group(1))
                     else:
-                        scores.append(0)
+                        # progress can be derived from the final board (sum tile values / 2)
+                        prog_sum = 0
+                        for v in last_board:
+                            if v != 0:
+                                prog_sum += 1 << v
+                        prog = prog_sum // 2
+                    if progress_start is not None or progress_end is not None:
+                        if progress_start is not None and prog < progress_start:
+                            last_board = None
+                            continue
+                        if progress_end is not None and prog > progress_end:
+                            last_board = None
+                            continue
+                    boards.append(last_board)
+                    scores.append(score)
+                    if prog is not None:
+                        progresses.append(prog)
                 last_board = None
                 continue
             parts = line.split()
@@ -163,7 +188,7 @@ def parse_final_boards(state_path: Path) -> Tuple[List[Tuple[int, ...]], List[in
             except ValueError:
                 continue
             last_board = vals
-    return boards, scores
+    return boards, scores, progresses
 
 
 def read_pos_from_header(path: Path, want_nt4a: bool, tuple_size: int) -> List[List[int]]:
@@ -324,10 +349,18 @@ def main() -> int:
                         missing.append((tr, ev, t, s, str(state_path)))
                         continue
 
-                    boards, scores = parse_final_boards(state_path)
+                    boards, scores, progresses = parse_final_boards(
+                        state_path, args.progress_start, args.progress_end
+                    )
                     if not sample_printed:
                         print("sample state path:", state_path)
                         print("sample board:", boards[0] if boards else None)
+                        if progresses:
+                            print("sample progress:", progresses[0])
+                        if args.progress_start is not None:
+                            print(
+                                f"progress filter: [{args.progress_start}, {args.progress_end}]"
+                            )
                         sample_printed = True
 
                     u_board = set()
@@ -587,3 +620,10 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+    if args.progress_start is not None and args.progress_end is None:
+        raise SystemExit("ERROR: --progress-end is required when --progress-start is set.")
+    if args.progress_end is not None and args.progress_start is None:
+        raise SystemExit("ERROR: --progress-start is required when --progress-end is set.")
+    if args.progress_start is not None and args.progress_end is not None:
+        if args.progress_start > args.progress_end:
+            raise SystemExit("ERROR: progress range is invalid (start > end).")
