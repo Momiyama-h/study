@@ -725,7 +725,10 @@ if result:
             "evals-mean-symdiff",
         ) and "label" not in k_config:
             k_config = dict(k_config)
-            k_config["label"] = k
+            if args.graph in ("err-rel-mean-symdiff", "surv-mean-symdiff", "surv-mean"):
+                k_config["label"] = re.sub(r"_mean(_st\\d+)?$", "", k)
+            else:
+                k_config["label"] = k
         line = plt.plot(v.x, v.y, **k_config)[0]
         if args.graph == "surv-mean-symdiff" and args.with_sd:
             sd_curve = sd_map.get(k)
