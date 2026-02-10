@@ -11,6 +11,57 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 
+def idx(r: int, c: int) -> int:
+    return r * 3 + c
+
+
+def build_map(transform):
+    m = [0] * 9
+    for r in range(3):
+        for c in range(3):
+            r2, c2 = transform(r, c)
+            m[idx(r2, c2)] = idx(r, c)
+    return m
+
+
+def rot90(r: int, c: int) -> Tuple[int, int]:
+    return c, 2 - r
+
+
+def rot180(r: int, c: int) -> Tuple[int, int]:
+    return 2 - r, 2 - c
+
+
+def rot270(r: int, c: int) -> Tuple[int, int]:
+    return 2 - c, r
+
+
+def mirror_lr(r: int, c: int) -> Tuple[int, int]:
+    return r, 2 - c
+
+
+TRANSFORMS = [
+    lambda r, c: (r, c),  # identity
+    rot90,
+    rot180,
+    rot270,
+    mirror_lr,
+    lambda r, c: rot90(*mirror_lr(r, c)),
+    lambda r, c: rot180(*mirror_lr(r, c)),
+    lambda r, c: rot270(*mirror_lr(r, c)),
+]
+
+MAPS = [build_map(t) for t in TRANSFORMS]
+
+
+def transform_board(board: Tuple[int, ...], mapping: List[int]) -> Tuple[int, ...]:
+    return tuple(board[mapping[i]] for i in range(9))
+
+
+def canonical_board(board: Tuple[int, ...]) -> Tuple[int, ...]:
+    return min(transform_board(board, m) for m in MAPS)
+
+
 def parse_seed_dir(name: str) -> Optional[int]:
     if not name.startswith("seed"):
         return None
@@ -100,16 +151,18 @@ def iter_eval_progress(eval_path: Path):
                 prg = int(float(parts[4]))
             except ValueError:
                 continue
-            yield prg
+    yield prg
 
 
-def calc_unique_in_range(state_path: Path, eval_path: Path, pmin: int, pmax: int) -> Tuple[int, int]:
+def calc_unique_in_range(
+    state_path: Path, eval_path: Path, pmin: int, pmax: int, canonicalize: bool
+) -> Tuple[int, int]:
     uniq = set()
     total = 0
     for prg, board in zip(iter_eval_progress(eval_path), iter_state_boards(state_path)):
         if pmin <= prg <= pmax:
             total += 1
-            uniq.add(board)
+            uniq.add(canonical_board(board) if canonicalize else board)
     return len(uniq), total
 
 
@@ -122,7 +175,12 @@ def mean_std(vals: List[float]) -> Tuple[float, float]:
 
 
 def calc_unique_bins(
-    state_path: Path, eval_path: Path, pmin: int, pmax: int, bin_size: int
+    state_path: Path,
+    eval_path: Path,
+    pmin: int,
+    pmax: int,
+    bin_size: int,
+    canonicalize: bool,
 ) -> Tuple[List[int], List[int]]:
     bins = (pmax - pmin) // bin_size + 1
     uniq_bins = [set() for _ in range(bins)]
@@ -132,7 +190,7 @@ def calc_unique_bins(
             continue
         idx = (prg - pmin) // bin_size
         total_bins[idx] += 1
-        uniq_bins[idx].add(board)
+        uniq_bins[idx].add(canonical_board(board) if canonicalize else board)
     uniq_counts = [len(s) for s in uniq_bins]
     return uniq_counts, total_bins
 
@@ -159,6 +217,7 @@ def main() -> int:
     ap.add_argument("--progress-end", type=int, required=True)
     ap.add_argument("--bins", type=int, default=20)
     ap.add_argument("--use-ratio", action="store_true", help="plot unique_ratio instead of unique_count")
+    ap.add_argument("--canonical", action="store_true", help="treat 8-symmetry boards as identical")
     ap.add_argument("--curve", action="store_true", help="output progress->unique_ratio curve (mean±sd)")
     ap.add_argument("--curve-bin", type=int, default=10, help="progress bin size for curve (default: 10)")
     ap.add_argument("--curve-no-sd", action="store_true", help="disable sd band for curve plots")
@@ -236,7 +295,9 @@ def main() -> int:
                         eval_file = nt_dir / f"eval_seed{ev}" / "eval.txt"
                     if not state.exists() or not eval_file.exists():
                         continue
-                    uniq, total = calc_unique_in_range(state, eval_file, pmin, pmax)
+                    uniq, total = calc_unique_in_range(
+                        state, eval_file, pmin, pmax, args.canonical
+                    )
                     ratio = (uniq / total) if total > 0 else 0.0
                     rows.append({
                         "train_seed": str(tr),
@@ -251,7 +312,9 @@ def main() -> int:
                     })
                     values.setdefault((t, s), []).append(ratio if args.use_ratio else uniq)
                     if args.curve:
-                        uniq_bins, total_bins = calc_unique_bins(state, eval_file, pmin, pmax, curve_bin)
+                        uniq_bins, total_bins = calc_unique_bins(
+                            state, eval_file, pmin, pmax, curve_bin, args.canonical
+                        )
                         for i in range(curve_bins):
                             denom = total_bins[i]
                             r = (uniq_bins[i] / denom) if denom > 0 else 0.0
@@ -283,14 +346,20 @@ def main() -> int:
         fig, ax = plt.subplots(figsize=(6, 4))
         ax.hist(data_sym, bins=args.bins, alpha=0.6, label="sym")
         ax.hist(data_notsym, bins=args.bins, alpha=0.6, label="notsym")
-        xlab = "unique_ratio" if args.use_ratio else "unique boards (progress range)"
+        if args.use_ratio:
+            xlab = "canonical_unique_ratio" if args.canonical else "unique_ratio"
+        else:
+            xlab = "canonical unique boards (progress range)" if args.canonical else "unique boards (progress range)"
         ax.set_xlabel(xlab)
         ax.set_ylabel("count")
         if not args.no_title:
             if args.use_ratio:
-                ax.set_title(f"NT{t} unique_ratio (progress {pmin}-{pmax})")
+                title = "unique_ratio"
             else:
-                ax.set_title(f"NT{t} unique boards (progress {pmin}-{pmax})")
+                title = "unique boards"
+            if args.canonical:
+                title = f"canonical {title}"
+            ax.set_title(f"NT{t} {title} (progress {pmin}-{pmax})")
         ax.legend()
         fig.tight_layout()
         ext = args.ext.lstrip('.')
@@ -303,14 +372,20 @@ def main() -> int:
             fig, ax = plt.subplots(figsize=(6, 4))
             ax.hist(data_sym, bins=args.bins, alpha=0.6, label="sym")
             ax.hist(data_notsym, bins=args.bins, alpha=0.6, label="notsym")
-            xlab = "unique_ratio" if args.use_ratio else "unique boards (progress range)"
+            if args.use_ratio:
+                xlab = "canonical_unique_ratio" if args.canonical else "unique_ratio"
+            else:
+                xlab = "canonical unique boards (progress range)" if args.canonical else "unique boards (progress range)"
             ax.set_xlabel(xlab)
             ax.set_ylabel("count")
             if not args.no_title:
                 if args.use_ratio:
-                    ax.set_title(f"NT{t} unique_ratio (progress {pmin}-{pmax})")
+                    title = "unique_ratio"
                 else:
-                    ax.set_title(f"NT{t} unique boards (progress {pmin}-{pmax})")
+                    title = "unique boards"
+                if args.canonical:
+                    title = f"canonical {title}"
+                ax.set_title(f"NT{t} {title} (progress {pmin}-{pmax})")
             ax.legend()
             fig.tight_layout()
             fig.savefig(pdf_dir / f"progress_unique_hist_NT{t}.pdf", bbox_inches="tight")
@@ -381,9 +456,10 @@ def main() -> int:
                                 [a + b for a, b in zip(y_notsym, sd_notsym)],
                                 alpha=0.2)
             ax.set_xlabel("progress")
-            ax.set_ylabel("unique_ratio")
+            ax.set_ylabel("canonical_unique_ratio" if args.canonical else "unique_ratio")
             if not args.no_title:
-                ax.set_title(f"NT{t} unique_ratio by progress (bin={curve_bin})")
+                title = "canonical unique_ratio" if args.canonical else "unique_ratio"
+                ax.set_title(f"NT{t} {title} by progress (bin={curve_bin})")
             ax.legend()
             fig.tight_layout()
             ext = args.ext.lstrip(".")
@@ -406,9 +482,10 @@ def main() -> int:
                                     [a + b for a, b in zip(y_notsym, sd_notsym)],
                                     alpha=0.2)
                 ax.set_xlabel("progress")
-                ax.set_ylabel("unique_ratio")
+                ax.set_ylabel("canonical_unique_ratio" if args.canonical else "unique_ratio")
                 if not args.no_title:
-                    ax.set_title(f"NT{t} unique_ratio by progress (bin={curve_bin})")
+                    title = "canonical unique_ratio" if args.canonical else "unique_ratio"
+                    ax.set_title(f"NT{t} {title} by progress (bin={curve_bin})")
                 ax.legend()
                 fig.tight_layout()
                 fig.savefig(pdf_dir / f"progress_unique_curve_NT{t}.pdf", bbox_inches="tight")
