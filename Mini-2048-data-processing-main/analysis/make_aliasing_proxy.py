@@ -166,7 +166,7 @@ def parse_final_boards(state_path: Path) -> Tuple[List[Tuple[int, ...]], List[in
     return boards, scores
 
 
-def read_pos_from_header(path: Path, want_nt4a: bool) -> List[List[int]]:
+def read_pos_from_header(path: Path, want_nt4a: bool, tuple_size: int) -> List[List[int]]:
     text = path.read_text(encoding="utf-8")
     lines = text.splitlines()
     in_nt4a = False
@@ -208,7 +208,10 @@ def read_pos_from_header(path: Path, want_nt4a: bool) -> List[List[int]]:
         nums = re.findall(r"-?\d+", line)
         if not nums:
             continue
-        pos.append([int(n) for n in nums])
+        # Ignore trailing comment numbers; only take tuple_size entries.
+        if len(nums) < tuple_size:
+            continue
+        pos.append([int(n) for n in nums[:tuple_size]])
     return pos
 
 
@@ -216,10 +219,10 @@ def tuple_definitions(tuple_n: int, sym: str, want_nt4a: bool) -> List[List[int]
     base = Path(__file__).resolve().parents[2] / "training"
     if tuple_n == 4:
         header = base / ("4tuples_sym.h" if sym == "sym" else "4tuples_nosym.h")
-        return read_pos_from_header(header, want_nt4a)
+        return read_pos_from_header(header, want_nt4a, tuple_n)
     if tuple_n == 6:
         header = base / ("6tuples_sym.h" if sym == "sym" else "6tuples_notsym.h")
-        return read_pos_from_header(header, False)
+        return read_pos_from_header(header, False, tuple_n)
     raise ValueError(f"unsupported tuple size: {tuple_n}")
 
 
