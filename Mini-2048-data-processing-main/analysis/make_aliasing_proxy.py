@@ -220,6 +220,9 @@ def tuple_definitions(tuple_n: int, sym: str, want_nt4a: bool) -> List[List[int]
     if tuple_n == 4:
         header = base / ("4tuples_sym.h" if sym == "sym" else "4tuples_nosym.h")
         return read_pos_from_header(header, want_nt4a, tuple_n)
+    if tuple_n == 5:
+        header = base / ("5tuples_sym.h" if sym == "sym" else "5tuples_notsym.h")
+        return read_pos_from_header(header, False, tuple_n)
     if tuple_n == 6:
         header = base / ("6tuples_sym.h" if sym == "sym" else "6tuples_notsym.h")
         return read_pos_from_header(header, False, tuple_n)
