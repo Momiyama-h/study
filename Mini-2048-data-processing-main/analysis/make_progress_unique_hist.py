@@ -113,6 +113,30 @@ def calc_unique_in_range(state_path: Path, eval_path: Path, pmin: int, pmax: int
     return len(uniq), total
 
 
+def mean_std(vals: List[float]) -> Tuple[float, float]:
+    if not vals:
+        return 0.0, 0.0
+    m = sum(vals) / len(vals)
+    var = sum((v - m) ** 2 for v in vals) / len(vals)
+    return m, math.sqrt(var)
+
+
+def calc_unique_bins(
+    state_path: Path, eval_path: Path, pmin: int, pmax: int, bin_size: int
+) -> Tuple[List[int], List[int]]:
+    bins = (pmax - pmin) // bin_size + 1
+    uniq_bins = [set() for _ in range(bins)]
+    total_bins = [0 for _ in range(bins)]
+    for prg, board in zip(iter_eval_progress(eval_path), iter_state_boards(state_path)):
+        if prg < pmin or prg > pmax:
+            continue
+        idx = (prg - pmin) // bin_size
+        total_bins[idx] += 1
+        uniq_bins[idx].add(board)
+    uniq_counts = [len(s) for s in uniq_bins]
+    return uniq_counts, total_bins
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(
         description="progress範囲内のユニーク盤面数を集計し、sym/notsymでヒストグラム比較する"
@@ -135,6 +159,9 @@ def main() -> int:
     ap.add_argument("--progress-end", type=int, required=True)
     ap.add_argument("--bins", type=int, default=20)
     ap.add_argument("--use-ratio", action="store_true", help="plot unique_ratio instead of unique_count")
+    ap.add_argument("--curve", action="store_true", help="output progress->unique_ratio curve (mean±sd)")
+    ap.add_argument("--curve-bin", type=int, default=10, help="progress bin size for curve (default: 10)")
+    ap.add_argument("--curve-no-sd", action="store_true", help="disable sd band for curve plots")
     ap.add_argument("--no-title", action="store_true")
     ap.add_argument("--ext", default="png", help="plot extension (png/pdf)")
     ap.add_argument("--pdf", action="store_true", help="also output pdf")
@@ -183,8 +210,11 @@ def main() -> int:
 
     rows: List[Dict[str, str]] = []
     values: Dict[Tuple[str, str], List[int]] = {}
+    curve_values: Dict[Tuple[str, str, int], List[float]] = {}
 
     pmin, pmax = args.progress_start, args.progress_end
+    curve_bin = max(1, args.curve_bin)
+    curve_bins = (pmax - pmin) // curve_bin + 1 if args.curve else 0
     for tr in train_seeds:
         for t in tuples:
             for s in syms:
@@ -220,6 +250,12 @@ def main() -> int:
                         "unique_ratio": f"{ratio:.6f}",
                     })
                     values.setdefault((t, s), []).append(ratio if args.use_ratio else uniq)
+                    if args.curve:
+                        uniq_bins, total_bins = calc_unique_bins(state, eval_file, pmin, pmax, curve_bin)
+                        for i in range(curve_bins):
+                            denom = total_bins[i]
+                            r = (uniq_bins[i] / denom) if denom > 0 else 0.0
+                            curve_values.setdefault((t, s, i), []).append(r)
 
     if not rows:
         raise SystemExit("ERROR: no matching state/eval files found")
@@ -282,6 +318,103 @@ def main() -> int:
 
     print(f"saved: {csv_path}")
     print(f"plots: {out_dir}")
+
+    if args.curve:
+        curve_csv = out_dir / "progress_unique_curve.csv"
+        with curve_csv.open("w", encoding="utf-8", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=[
+                "tuple", "sym", "progress_start", "progress_end",
+                "progress_center", "unique_ratio_mean", "unique_ratio_sd", "n_samples"
+            ])
+            writer.writeheader()
+            for t in tuples:
+                for s in syms:
+                    for i in range(curve_bins):
+                        vals = curve_values.get((t, s, i), [])
+                        if not vals:
+                            continue
+                        b_start = pmin + i * curve_bin
+                        b_end = min(pmax, b_start + curve_bin - 1)
+                        center = (b_start + b_end) / 2.0
+                        mean, sd = mean_std(vals)
+                        writer.writerow({
+                            "tuple": f"NT{t}",
+                            "sym": s,
+                            "progress_start": b_start,
+                            "progress_end": b_end,
+                            "progress_center": f"{center:.1f}",
+                            "unique_ratio_mean": f"{mean:.6f}",
+                            "unique_ratio_sd": f"{sd:.6f}",
+                            "n_samples": len(vals),
+                        })
+
+        for t in tuples:
+            x = []
+            y_sym = []
+            y_notsym = []
+            sd_sym = []
+            sd_notsym = []
+            for i in range(curve_bins):
+                b_start = pmin + i * curve_bin
+                b_end = min(pmax, b_start + curve_bin - 1)
+                center = (b_start + b_end) / 2.0
+                x.append(center)
+                vals_sym = curve_values.get((t, "sym", i), [])
+                vals_notsym = curve_values.get((t, "notsym", i), [])
+                m_sym, s_sym = mean_std(vals_sym)
+                m_notsym, s_notsym = mean_std(vals_notsym)
+                y_sym.append(m_sym if vals_sym else float("nan"))
+                y_notsym.append(m_notsym if vals_notsym else float("nan"))
+                sd_sym.append(s_sym if vals_sym else 0.0)
+                sd_notsym.append(s_notsym if vals_notsym else 0.0)
+
+            fig, ax = plt.subplots(figsize=(6, 4))
+            ax.plot(x, y_sym, label="sym")
+            ax.plot(x, y_notsym, label="notsym")
+            if not args.curve_no_sd:
+                ax.fill_between(x,
+                                [a - b for a, b in zip(y_sym, sd_sym)],
+                                [a + b for a, b in zip(y_sym, sd_sym)],
+                                alpha=0.2)
+                ax.fill_between(x,
+                                [a - b for a, b in zip(y_notsym, sd_notsym)],
+                                [a + b for a, b in zip(y_notsym, sd_notsym)],
+                                alpha=0.2)
+            ax.set_xlabel("progress")
+            ax.set_ylabel("unique_ratio")
+            if not args.no_title:
+                ax.set_title(f"NT{t} unique_ratio by progress (bin={curve_bin})")
+            ax.legend()
+            fig.tight_layout()
+            ext = args.ext.lstrip(".")
+            fig.savefig(out_dir / f"progress_unique_curve_NT{t}.{ext}", dpi=200, bbox_inches="tight")
+            plt.close(fig)
+
+            if args.pdf:
+                pdf_dir = Path(args.pdf_out_dir) if args.pdf_out_dir else out_dir
+                pdf_dir.mkdir(parents=True, exist_ok=True)
+                fig, ax = plt.subplots(figsize=(6, 4))
+                ax.plot(x, y_sym, label="sym")
+                ax.plot(x, y_notsym, label="notsym")
+                if not args.curve_no_sd:
+                    ax.fill_between(x,
+                                    [a - b for a, b in zip(y_sym, sd_sym)],
+                                    [a + b for a, b in zip(y_sym, sd_sym)],
+                                    alpha=0.2)
+                    ax.fill_between(x,
+                                    [a - b for a, b in zip(y_notsym, sd_notsym)],
+                                    [a + b for a, b in zip(y_notsym, sd_notsym)],
+                                    alpha=0.2)
+                ax.set_xlabel("progress")
+                ax.set_ylabel("unique_ratio")
+                if not args.no_title:
+                    ax.set_title(f"NT{t} unique_ratio by progress (bin={curve_bin})")
+                ax.legend()
+                fig.tight_layout()
+                fig.savefig(pdf_dir / f"progress_unique_curve_NT{t}.pdf", bbox_inches="tight")
+                plt.close(fig)
+
+        print(f"curve csv: {curve_csv}")
     return 0
 
 
