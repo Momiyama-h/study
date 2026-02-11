@@ -145,6 +145,19 @@ def normalize_sym(value):
     return None
 
 
+def auto_color_for_survival(label: str | None) -> str | None:
+    if not label:
+        return None
+    key = label.lower()
+    if key.startswith("pp") or "pp" in key:
+        return "#4d4d4d"
+    if "notsym" in key:
+        return "#ff7f0e"
+    if "_sym" in key:
+        return "#1f77b4"
+    return None
+
+
 def matches_meta(pd: PlayerData) -> bool:
     if not (args.seed or args.eval_seed or args.stage or args.tuple or args.sym):
         return True
@@ -280,7 +293,7 @@ arg_parser.add_argument(
 arg_parser.add_argument(
     "--with-sd",
     action="store_true",
-    help="surv-mean-symdiff に標準偏差の帯を追加する。",
+    help="surv-mean / surv-mean-symdiff に標準偏差の帯を追加する。",
 )
 arg_parser.add_argument(
     "--include-pp",
@@ -556,11 +569,16 @@ elif args.graph == "surv-symdiff":
     )
 elif args.graph == "surv-mean":
     output_name = args.output if args.output else "survival_mean.pdf"
-
-    result = survival.calc_survival_mean_data(
-        player_data_list=player_data_list,
-        include_pp=args.include_pp,
-    )
+    if args.with_sd:
+        result, sd_map = survival.calc_survival_mean_sd_data(
+            player_data_list=player_data_list,
+            include_pp=args.include_pp,
+        )
+    else:
+        result = survival.calc_survival_mean_data(
+            player_data_list=player_data_list,
+            include_pp=args.include_pp,
+        )
 elif args.graph == "surv-mean-symdiff":
     output_name = args.output if args.output else "survival_mean_symdiff.pdf"
     if args.with_sd:
@@ -729,8 +747,15 @@ if result:
                 k_config["label"] = re.sub(r"_mean(_st\\d+)?$", "", k)
             else:
                 k_config["label"] = k
+        if args.graph in ("surv", "surv-symdiff", "surv-mean", "surv-mean-symdiff"):
+            label_for_color = k_config.get("label", k)
+            if not k_config.get("color"):
+                auto_color = auto_color_for_survival(label_for_color)
+                if auto_color:
+                    k_config = dict(k_config)
+                    k_config["color"] = auto_color
         line = plt.plot(v.x, v.y, **k_config)[0]
-        if args.graph == "surv-mean-symdiff" and args.with_sd:
+        if args.graph in ("surv-mean-symdiff", "surv-mean") and args.with_sd:
             sd_curve = sd_map.get(k)
             if sd_curve and len(sd_curve.y) == len(v.y):
                 lower = [max(0.0, m - s) for m, s in zip(v.y, sd_curve.y)]

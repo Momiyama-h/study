@@ -136,6 +136,7 @@ def plot_reach_bar(
 ) -> bool:
     if not tuples or not syms:
         return False
+    color_map = {"sym": "#1f77b4", "notsym": "#ff7f0e"}
     fig, ax = plt.subplots(figsize=(7, 4))
     x = list(range(len(tuples)))
     if combine_sym:
@@ -156,6 +157,7 @@ def plot_reach_bar(
                 capsize=3,
                 alpha=0.8,
                 label=s,
+                color=color_map.get(s),
             )
         ax.legend()
     else:
@@ -167,7 +169,7 @@ def plot_reach_bar(
             mean, sd = stats.get((t, s), (None, None))
             means.append(mean if mean is not None else 0.0)
             sds.append(sd if sd is not None else 0.0)
-        ax.bar(x, means, yerr=sds, capsize=3, alpha=0.8, label=s)
+        ax.bar(x, means, yerr=sds, capsize=3, alpha=0.8, label=s, color=color_map.get(s))
     ax.set_xticks(x)
     ax.set_xticklabels([f"NT{t}" for t in tuples])
     ax.set_ylabel("reach probability")
