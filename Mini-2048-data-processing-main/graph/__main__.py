@@ -747,6 +747,10 @@ if result:
                 k_config["label"] = re.sub(r"_mean(_st\\d+)?$", "", k)
             else:
                 k_config["label"] = k
+        if args.graph in ("surv-mean-symdiff", "surv-mean"):
+            k_config = dict(k_config)
+            current_label = k_config.get("label", k)
+            k_config["label"] = re.sub(r"_mean(_st\\d+)?$", "", current_label)
         if args.graph in ("surv", "surv-symdiff", "surv-mean", "surv-mean-symdiff"):
             label_for_color = k_config.get("label", k)
             if not k_config.get("color"):
