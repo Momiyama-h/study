@@ -16,7 +16,7 @@ static inline int select_move(const state_t& state, EvalFn eval_fn,
   state_t copy;
   for (int d = 0; d < 4; d++) {
     if (play(d, state, &copy)) {
-      double v = eval_fn(copy.board);
+      double v = eval_fn(copy.board) + (copy.score - state.score);
       evals_out[d] = v;
       if (v > max_v) {
         max_v = v;
