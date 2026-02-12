@@ -397,11 +397,7 @@ int main(int argc, char* argv[])
       if (turn > 1) {
 	{
 	  CpuAccum acc(cpu_ns_update_block);
-	  double target = 0.0;
-	  {
-	    CpuAccum acc_eval(cpu_ns_eval_block);
-	    target = max_ev_r - calcEv(lastboard);
-	  }
+	  const double target = max_ev_r - eval_board(lastboard);
 	  update(lastboard, target);
 	}
 	traincount++;
@@ -417,11 +413,7 @@ int main(int argc, char* argv[])
       if (gameOver(state)) {
 	{
 	  CpuAccum acc(cpu_ns_update_block);
-	  double target = 0.0;
-	  {
-	    CpuAccum acc_eval(cpu_ns_eval_block);
-	    target = 0 - calcEv(lastboard);
-	  }
+	  const double target = 0 - eval_board(lastboard);
 	  update(lastboard, target);
 	}
 	traincount++;

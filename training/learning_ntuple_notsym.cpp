@@ -528,21 +528,13 @@ int main(int argc, char* argv[])
 #if defined(USE_4TUPLE) || defined(NT4A)
           {
             CpuAccum acc(cpu_ns_update_block);
-            double target = 0.0;
-            {
-              CpuAccum acc_eval(cpu_ns_eval_block);
-              target = max_ev_r - calcEv(lastboard);
-            }
+            const double target = max_ev_r - eval_board(lastboard);
             update(lastboard, target);
           }
 #else
           {
             CpuAccum acc(cpu_ns_update_block);
-            double target = 0.0;
-            {
-              CpuAccum acc_eval(cpu_ns_eval_block);
-              target = max_ev_r - NT6_notsym::calcEv(lastboard);
-            }
+            const double target = max_ev_r - eval_board(lastboard);
             NT6_notsym::update(lastboard, target);
           }
 #endif
@@ -561,21 +553,13 @@ int main(int argc, char* argv[])
 #if defined(USE_4TUPLE) || defined(NT4A)
           {
             CpuAccum acc(cpu_ns_update_block);
-            double target = 0.0;
-            {
-              CpuAccum acc_eval(cpu_ns_eval_block);
-              target = 0 - calcEv(lastboard);
-            }
+            const double target = 0 - eval_board(lastboard);
             update(lastboard, target);
           }
 #else
           {
             CpuAccum acc(cpu_ns_update_block);
-            double target = 0.0;
-            {
-              CpuAccum acc_eval(cpu_ns_eval_block);
-              target = 0 - NT6_notsym::calcEv(lastboard);
-            }
+            const double target = 0 - eval_board(lastboard);
             NT6_notsym::update(lastboard, target);
           }
 #endif
