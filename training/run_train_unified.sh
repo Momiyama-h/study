@@ -32,7 +32,8 @@ Options:
   --seeds "LIST"         explicit seed list (e.g. "5 6 7")
   --tuples "LIST"        tuple sizes (default: "4 5 6")
   --modes "LIST"         training modes (default: "sym")
-                         available: sym,notsym,rotate,rot180,diag
+                         available: sym,notsym,rotate,rot180,diag,
+                                    rotate_notsym,rot180_notsym,diag_notsym
   --parallel N           max parallel jobs (default: 8)
   --stdout-log 0|1       enable stdout log in training (default: 0)
   --policy MODE          greedy|expecti3 (default: greedy)
@@ -97,9 +98,9 @@ read -r -a MODES <<< "$MODES_STR"
 
 for mode in "${MODES[@]}"; do
   case "$mode" in
-    sym|notsym|rotate|rot180|diag) ;;
+    sym|notsym|rotate|rot180|diag|rotate_notsym|rot180_notsym|diag_notsym) ;;
     *)
-      echo "ERROR: unsupported mode: $mode (use sym,notsym,rotate,rot180,diag)" >&2
+      echo "ERROR: unsupported mode: $mode (use sym,notsym,rotate,rot180,diag,rotate_notsym,rot180_notsym,diag_notsym)" >&2
       exit 1
       ;;
   esac
@@ -188,6 +189,9 @@ src_for_mode() {
     rotate) echo "$BASE_MINI/learning_ntuple_rotate.cpp" ;;
     rot180) echo "$BASE_MINI/learning_ntuple_rot180.cpp" ;;
     diag) echo "$BASE_MINI/learning_ntuple_diag.cpp" ;;
+    rotate_notsym) echo "$BASE_MINI/learning_ntuple_rotate_notsym.cpp" ;;
+    rot180_notsym) echo "$BASE_MINI/learning_ntuple_rot180_notsym.cpp" ;;
+    diag_notsym) echo "$BASE_MINI/learning_ntuple_diag_notsym.cpp" ;;
     *) echo "" ;;
   esac
 }
