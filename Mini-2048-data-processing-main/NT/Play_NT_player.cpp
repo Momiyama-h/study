@@ -4,10 +4,12 @@
 #include <climits>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <filesystem>
 #include <iostream>
 #include <list>
 #include <unordered_map>
+#include <vector>
 
 namespace fs = std::filesystem;
 using namespace std;
@@ -44,6 +46,145 @@ int progress_calculation(int board[9]) {
     }
   }
   return sum / 2;
+}
+
+static constexpr int kSymPos[8][9] = {
+    {0, 1, 2, 3, 4, 5, 6, 7, 8},
+    {0, 3, 6, 1, 4, 7, 2, 5, 8},
+    {2, 1, 0, 5, 4, 3, 8, 7, 6},
+    {2, 5, 8, 1, 4, 7, 0, 3, 6},
+    {6, 7, 8, 3, 4, 5, 0, 1, 2},
+    {6, 3, 0, 7, 4, 1, 8, 5, 2},
+    {8, 7, 6, 5, 4, 3, 2, 1, 0},
+    {8, 5, 2, 7, 4, 1, 6, 3, 0},
+};
+
+static constexpr int kSymIdxIdentity[1] = {0};
+static constexpr int kSymIdxDiag[2] = {0, 1};
+static constexpr int kSymIdxRot180[2] = {0, 6};
+
+static constexpr int kPosRot180Notsym4[] = {
+    0, 1, 3, 4, 8, 7, 5, 4, 0, 3, 6, 7,
+    8, 5, 2, 1, 1, 4, 7, 8, 7, 4, 1, 0,
+};
+static constexpr int kPosRotateNotsym4[] = {
+    0, 1, 3, 4, 2, 5, 1, 4, 8, 7, 5, 4, 6, 3, 7, 4,
+    0, 3, 6, 7, 2, 1, 0, 3, 8, 5, 2, 1, 6, 7, 8, 5,
+    1, 4, 7, 8, 5, 4, 3, 6, 7, 4, 1, 0, 3, 4, 5, 2,
+};
+static constexpr int kPosRot180Notsym5[] = {
+    0, 1, 2, 3, 4, 8, 7, 6, 5, 4, 0, 1, 3, 4, 5,
+    8, 7, 5, 4, 3, 0, 1, 2, 3, 6, 8, 7, 6, 5, 2,
+};
+static constexpr int kPosRotateNotsym5[] = {
+    0, 1, 2, 3, 4, 2, 5, 8, 1, 4, 8, 7, 6, 5, 4, 6, 3, 0, 7, 4,
+    0, 1, 3, 4, 5, 2, 5, 1, 4, 7, 8, 7, 5, 4, 3, 6, 3, 7, 4, 1,
+    0, 1, 2, 3, 6, 2, 5, 8, 1, 0, 8, 7, 6, 5, 2, 6, 3, 0, 7, 8,
+};
+static constexpr int kPosRot180Notsym6[] = {
+    0, 1, 2, 3, 4, 5, 8, 7, 6, 5, 4, 3,
+    0, 3, 4, 6, 7, 8, 8, 5, 4, 2, 1, 0,
+};
+static constexpr int kPosRotateNotsym6[] = {
+    0, 1, 2, 3, 4, 5, 2, 5, 8, 1, 4, 7, 8, 7, 6, 5, 4, 3,
+    6, 3, 0, 7, 4, 1, 0, 3, 4, 6, 7, 8, 2, 1, 4, 0, 3, 6,
+    8, 5, 4, 2, 1, 0, 6, 7, 4, 8, 5, 2,
+};
+
+static constexpr int kPosDiagNotsym4[] = {
+    0, 1, 3, 4, 0, 3, 1, 4, 0, 3, 6, 7,
+    0, 1, 2, 5, 1, 4, 7, 8, 3, 4, 5, 8,
+};
+static constexpr int kPosDiagNotsym5[] = {
+    0, 1, 2, 3, 4, 0, 3, 6, 1, 4, 0, 1, 3, 4, 5,
+    0, 3, 1, 4, 7, 0, 1, 2, 3, 6, 0, 3, 6, 1, 2,
+};
+static constexpr int kPosDiagNotsym6[] = {
+    0, 1, 2, 3, 4, 5, 0, 3, 6, 1, 4, 7,
+    0, 3, 4, 6, 7, 8, 0, 1, 4, 2, 5, 8,
+};
+
+struct DynamicEval {
+  int tuple_size = 0;
+  int num_tuple = 0;
+  int array_length = 0;
+  const int* pos_flat = nullptr;
+  const int* sym_indices = nullptr;
+  int sym_count = 1;
+  std::vector<double> evs;
+  bool loaded = false;
+
+  double eval(const int* board, bool force_stage0) const {
+    if (!loaded) return 0.0;
+    int s = 0;
+#ifndef SINGLE_STAGE
+    if (!force_stage0) {
+      for (int i = 0; i < 9; i++) {
+        if (board[i] >= 9) {
+          s = 1;
+          break;
+        }
+      }
+    }
+#endif
+    const size_t stage_offset =
+        static_cast<size_t>(s) * static_cast<size_t>(num_tuple) *
+        static_cast<size_t>(array_length);
+    double ev = 0.0;
+    for (int i = 0; i < num_tuple; i++) {
+      const int* tuple_pos = pos_flat + (i * tuple_size);
+      for (int r = 0; r < sym_count; r++) {
+        const int sym = sym_indices[r];
+        int index = 0;
+        for (int k = 0; k < tuple_size; k++) {
+          index = index * 11 + board[kSymPos[sym][tuple_pos[k]]];
+        }
+        ev += evs[stage_offset + static_cast<size_t>(i) *
+                                static_cast<size_t>(array_length) +
+                  static_cast<size_t>(index)];
+      }
+    }
+    return ev;
+  }
+};
+
+static DynamicEval g_dynamic_eval;
+
+static bool load_dynamic_evs(FILE* fp, int tuple_size, int num_tuple,
+                             const int* pos_flat, const int* sym_indices,
+                             int sym_count) {
+  DynamicEval next;
+  next.tuple_size = tuple_size;
+  next.num_tuple = num_tuple;
+  next.pos_flat = pos_flat;
+  next.sym_indices = sym_indices;
+  next.sym_count = sym_count;
+  next.array_length = 1;
+  for (int i = 0; i < tuple_size; i++) {
+    next.array_length *= 11;
+  }
+  const size_t total =
+      static_cast<size_t>(2) * static_cast<size_t>(num_tuple) *
+      static_cast<size_t>(next.array_length);
+  next.evs.resize(total);
+  const size_t count = fread(next.evs.data(), sizeof(double), total, fp);
+  if (count != total) {
+    fprintf(stderr,
+            "Error: failed to read dynamic ev table (read=%zu, expect=%zu)\n",
+            count, total);
+    return false;
+  }
+  next.loaded = true;
+  g_dynamic_eval = std::move(next);
+  return true;
+}
+
+static double calcEv_dynamic(const int* board) {
+  return g_dynamic_eval.eval(board, false);
+}
+
+static double calcEv_dynamic_stage0(const int* board) {
+  return g_dynamic_eval.eval(board, true);
 }
 
 static double calcEv_stage0_nt4_sym(const int* board) {
@@ -138,7 +279,7 @@ static double calcEv_stage0_nt6_notsym(const int* board) {
 }
 int main(int argc, char** argv) {
   if (argc < 2 + 1) {
-    fprintf(stderr, "Usage: playgreedy <seed> <game_counts> <evfile> [sym|notsym] [4|5|6] [--run-name NAME] [--board-root PATH] [--eval-seed N] [--single-stage|--nostage]\n");
+    fprintf(stderr, "Usage: playgreedy <seed> <game_counts> <evfile> [sym|notsym|rot180|rot180_notsym|diag|diag_notsym] [4|5|6] [--run-name NAME] [--board-root PATH] [--eval-seed N] [--single-stage|--nostage]\n");
     exit(1);
   }
   int seed = atoi(argv[1]);
@@ -166,7 +307,9 @@ int main(int argc, char** argv) {
   bool single_stage = false;
   for (int i = 4; i < argc; i++) {
     string opt = argv[i];
-    if (opt == "sym" || opt == "notsym") {
+    if (opt == "sym" || opt == "notsym" || opt == "rotate" ||
+        opt == "rot180" || opt == "diag" || opt == "rotate_notsym" ||
+        opt == "rot180_notsym" || opt == "diag_notsym") {
       symmetry = opt;
       symmetry_set = true;
     } else if (opt == "4" || opt == "5" || opt == "6") {
@@ -211,7 +354,20 @@ int main(int argc, char** argv) {
     }
   }
   if (!symmetry_set) {
-    if (basename.find("notsym") != string::npos || basename.find("nosym") != string::npos) {
+    if (basename.find("rot180_notsym") != string::npos) {
+      symmetry = "rot180_notsym";
+    } else if (basename.find("diag_notsym") != string::npos) {
+      symmetry = "diag_notsym";
+    } else if (basename.find("rotate_notsym") != string::npos) {
+      symmetry = "rotate_notsym";
+    } else if (basename.find("rot180") != string::npos) {
+      symmetry = "rot180";
+    } else if (basename.find("diag") != string::npos) {
+      symmetry = "diag";
+    } else if (basename.find("rotate") != string::npos) {
+      symmetry = "rotate";
+    } else if (basename.find("notsym") != string::npos ||
+               basename.find("nosym") != string::npos) {
       symmetry = "notsym";
     }
   }
@@ -250,46 +406,103 @@ int main(int argc, char** argv) {
     fprintf(stderr, "cannot open file: %s\n", evfile);
     exit(1);
   }
+  bool use_dynamic_eval = false;
   if (number == "4") {
     if (symmetry == "sym") {
       NT4::readEvs(fp);
-    } else {
+    } else if (symmetry == "notsym") {
       NT4_notsym::readEvs(fp);
+    } else if (symmetry == "rot180" || symmetry == "rotate") {
+      use_dynamic_eval = load_dynamic_evs(fp, NT4::TUPLE_SIZE, NT4::NUM_TUPLE,
+                                          &NT4::pos[0][0], kSymIdxRot180, 2);
+    } else if (symmetry == "diag") {
+      use_dynamic_eval = load_dynamic_evs(fp, NT4::TUPLE_SIZE, NT4::NUM_TUPLE,
+                                          &NT4::pos[0][0], kSymIdxDiag, 2);
+    } else if (symmetry == "rotate_notsym") {
+      use_dynamic_eval = load_dynamic_evs(fp, 4, 12, kPosRotateNotsym4,
+                                          kSymIdxIdentity, 1);
+    } else if (symmetry == "rot180_notsym") {
+      use_dynamic_eval = load_dynamic_evs(fp, 4, 6, kPosRot180Notsym4,
+                                          kSymIdxIdentity, 1);
+    } else if (symmetry == "diag_notsym") {
+      use_dynamic_eval = load_dynamic_evs(fp, 4, 6, kPosDiagNotsym4,
+                                          kSymIdxIdentity, 1);
     }
   } else if (number == "5") {
     if (symmetry == "sym") {
       NT5::readEvs(fp);
-    } else {
+    } else if (symmetry == "notsym") {
       NT5_notsym::readEvs(fp);
+    } else if (symmetry == "rot180" || symmetry == "rotate") {
+      use_dynamic_eval = load_dynamic_evs(fp, NT5::TUPLE_SIZE, NT5::NUM_TUPLE,
+                                          &NT5::pos[0][0], kSymIdxRot180, 2);
+    } else if (symmetry == "diag") {
+      use_dynamic_eval = load_dynamic_evs(fp, NT5::TUPLE_SIZE, NT5::NUM_TUPLE,
+                                          &NT5::pos[0][0], kSymIdxDiag, 2);
+    } else if (symmetry == "rotate_notsym") {
+      use_dynamic_eval = load_dynamic_evs(fp, 5, 12, kPosRotateNotsym5,
+                                          kSymIdxIdentity, 1);
+    } else if (symmetry == "rot180_notsym") {
+      use_dynamic_eval = load_dynamic_evs(fp, 5, 6, kPosRot180Notsym5,
+                                          kSymIdxIdentity, 1);
+    } else if (symmetry == "diag_notsym") {
+      use_dynamic_eval = load_dynamic_evs(fp, 5, 6, kPosDiagNotsym5,
+                                          kSymIdxIdentity, 1);
     }
   } else {
     if (symmetry == "sym") {
       NT6::readEvs(fp);
-    } else {
+    } else if (symmetry == "notsym") {
       NT6_notsym::readEvs(fp);
+    } else if (symmetry == "rot180" || symmetry == "rotate") {
+      use_dynamic_eval = load_dynamic_evs(fp, NT6::TUPLE_SIZE, NT6::NUM_TUPLE,
+                                          &NT6::pos[0][0], kSymIdxRot180, 2);
+    } else if (symmetry == "diag") {
+      use_dynamic_eval = load_dynamic_evs(fp, NT6::TUPLE_SIZE, NT6::NUM_TUPLE,
+                                          &NT6::pos[0][0], kSymIdxDiag, 2);
+    } else if (symmetry == "rotate_notsym") {
+      use_dynamic_eval = load_dynamic_evs(fp, 6, 8, kPosRotateNotsym6,
+                                          kSymIdxIdentity, 1);
+    } else if (symmetry == "rot180_notsym") {
+      use_dynamic_eval = load_dynamic_evs(fp, 6, 4, kPosRot180Notsym6,
+                                          kSymIdxIdentity, 1);
+    } else if (symmetry == "diag_notsym") {
+      use_dynamic_eval = load_dynamic_evs(fp, 6, 4, kPosDiagNotsym6,
+                                          kSymIdxIdentity, 1);
     }
   }
   fclose(fp);
+  if ((symmetry != "sym" && symmetry != "notsym") && !use_dynamic_eval) {
+    fprintf(stderr, "Error: unsupported mode or ev read failed: %s\n",
+            symmetry.c_str());
+    exit(1);
+  }
   srand(eval_seed);
 
   double (*eval_fn)(const int*) = nullptr;
   if (number == "4") {
     if (symmetry == "sym") {
       eval_fn = single_stage ? calcEv_stage0_nt4_sym : NT4::calcEv;
-    } else {
+    } else if (symmetry == "notsym") {
       eval_fn = single_stage ? calcEv_stage0_nt4_notsym : NT4_notsym::calcEv;
+    } else {
+      eval_fn = single_stage ? calcEv_dynamic_stage0 : calcEv_dynamic;
     }
   } else if (number == "5") {
     if (symmetry == "sym") {
       eval_fn = single_stage ? calcEv_stage0_nt5_sym : NT5::calcEv;
-    } else {
+    } else if (symmetry == "notsym") {
       eval_fn = single_stage ? calcEv_stage0_nt5_notsym : NT5_notsym::calcEv;
+    } else {
+      eval_fn = single_stage ? calcEv_dynamic_stage0 : calcEv_dynamic;
     }
   } else if (number == "6") {
     if (symmetry == "sym") {
       eval_fn = single_stage ? calcEv_stage0_nt6_sym : NT6::calcEv;
-    } else {
+    } else if (symmetry == "notsym") {
       eval_fn = single_stage ? calcEv_stage0_nt6_notsym : NT6_notsym::calcEv;
+    } else {
+      eval_fn = single_stage ? calcEv_dynamic_stage0 : calcEv_dynamic;
     }
   }
   if (eval_fn == nullptr) {

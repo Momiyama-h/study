@@ -13,7 +13,9 @@ Options:
   --seed-end N       end seed (required)
   --ev-stages LIST   comma-separated stage list (e.g. 0,1,2 or 9) (required)
   --tuples LIST      comma-separated tuples (default: 4,6)
-  --sym-list LIST    comma-separated sym list (default: sym,notsym)
+  --sym-list LIST    comma-separated mode list (default: sym,notsym)
+                     e.g. sym,notsym,rot180,rot180_notsym,diag,diag_notsym
+  --mode-list LIST   alias of --sym-list
   --game-count N     game count per eval (default: 100)
   --eval-seed-start N  eval seed start (optional)
   --eval-seed-end N    eval seed end (optional)
@@ -54,7 +56,7 @@ while [[ $# -gt 0 ]]; do
     --seed-end) SEED_END="$2"; shift 2;;
     --ev-stages) EV_STAGES="$2"; shift 2;;
     --tuples) TUPLES="$2"; shift 2;;
-    --sym-list) SYM_LIST="$2"; shift 2;;
+    --sym-list|--mode-list) SYM_LIST="$2"; shift 2;;
     --game-count) GAME_COUNT="$2"; shift 2;;
     --eval-seed-start) EVAL_SEED_START="$2"; shift 2;;
     --eval-seed-end) EVAL_SEED_END="$2"; shift 2;;

@@ -5,7 +5,7 @@ import re
 from pathlib import Path
 
 EVFILE_RE = re.compile(
-    r"(?P<tuple>\d+)tuple_(?P<sym>sym|notsym)_data_(?P<seed>\d+)_(?P<stage>\d+)\.dat"
+    r"(?P<tuple>\d+)tuple_(?P<sym>[A-Za-z0-9_]+)_data_(?P<seed>\d+)_(?P<stage>\d+)\.dat"
 )
 
 
