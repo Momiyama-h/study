@@ -60,6 +60,7 @@ static constexpr int kSymPos[8][9] = {
 };
 
 static constexpr int kSymIdxIdentity[1] = {0};
+static constexpr int kSymIdxRotate[4] = {0, 3, 6, 5};
 static constexpr int kSymIdxDiag[2] = {0, 1};
 static constexpr int kSymIdxRot180[2] = {0, 6};
 
@@ -279,7 +280,7 @@ static double calcEv_stage0_nt6_notsym(const int* board) {
 }
 int main(int argc, char** argv) {
   if (argc < 2 + 1) {
-    fprintf(stderr, "Usage: playgreedy <seed> <game_counts> <evfile> [sym|notsym|rot180|rot180_notsym|diag|diag_notsym] [4|5|6] [--run-name NAME] [--board-root PATH] [--eval-seed N] [--single-stage|--nostage]\n");
+    fprintf(stderr, "Usage: playgreedy <seed> <game_counts> <evfile> [sym|notsym|rotate|rotate_notsym|rot180|rot180_notsym|diag|diag_notsym] [4|5|6] [--run-name NAME] [--board-root PATH] [--eval-seed N] [--single-stage|--nostage]\n");
     exit(1);
   }
   int seed = atoi(argv[1]);
@@ -412,7 +413,10 @@ int main(int argc, char** argv) {
       NT4::readEvs(fp);
     } else if (symmetry == "notsym") {
       NT4_notsym::readEvs(fp);
-    } else if (symmetry == "rot180" || symmetry == "rotate") {
+    } else if (symmetry == "rotate") {
+      use_dynamic_eval = load_dynamic_evs(fp, NT4::TUPLE_SIZE, NT4::NUM_TUPLE,
+                                          &NT4::pos[0][0], kSymIdxRotate, 4);
+    } else if (symmetry == "rot180") {
       use_dynamic_eval = load_dynamic_evs(fp, NT4::TUPLE_SIZE, NT4::NUM_TUPLE,
                                           &NT4::pos[0][0], kSymIdxRot180, 2);
     } else if (symmetry == "diag") {
@@ -433,7 +437,10 @@ int main(int argc, char** argv) {
       NT5::readEvs(fp);
     } else if (symmetry == "notsym") {
       NT5_notsym::readEvs(fp);
-    } else if (symmetry == "rot180" || symmetry == "rotate") {
+    } else if (symmetry == "rotate") {
+      use_dynamic_eval = load_dynamic_evs(fp, NT5::TUPLE_SIZE, NT5::NUM_TUPLE,
+                                          &NT5::pos[0][0], kSymIdxRotate, 4);
+    } else if (symmetry == "rot180") {
       use_dynamic_eval = load_dynamic_evs(fp, NT5::TUPLE_SIZE, NT5::NUM_TUPLE,
                                           &NT5::pos[0][0], kSymIdxRot180, 2);
     } else if (symmetry == "diag") {
@@ -454,7 +461,10 @@ int main(int argc, char** argv) {
       NT6::readEvs(fp);
     } else if (symmetry == "notsym") {
       NT6_notsym::readEvs(fp);
-    } else if (symmetry == "rot180" || symmetry == "rotate") {
+    } else if (symmetry == "rotate") {
+      use_dynamic_eval = load_dynamic_evs(fp, NT6::TUPLE_SIZE, NT6::NUM_TUPLE,
+                                          &NT6::pos[0][0], kSymIdxRotate, 4);
+    } else if (symmetry == "rot180") {
       use_dynamic_eval = load_dynamic_evs(fp, NT6::TUPLE_SIZE, NT6::NUM_TUPLE,
                                           &NT6::pos[0][0], kSymIdxRot180, 2);
     } else if (symmetry == "diag") {
