@@ -391,7 +391,8 @@ int main(int argc, char** argv) {
   } else if (!board_root.empty()) {
     base_root = board_root;
   }
-  if (!run_name.empty() && (base_env == nullptr || !*base_env)) {
+  // Keep run-based layout regardless of BOARD_DATA_ROOT presence.
+  if (!run_name.empty()) {
     base_root = base_root + "/" + run_name + "/seed" + to_string(seed);
   }
   fs::create_directories(base_root);
