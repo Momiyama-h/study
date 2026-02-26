@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -28,57 +29,78 @@
 #endif
 static inline void read_evs(FILE* fp) { readEvs(fp); }
 static inline int get_updatecount(int s, int t, int idx) { return updatecounts[s][t][idx]; }
+static inline int get_tuple_pos(int t, int k) { return pos[t][k]; }
 static constexpr int kNumStages = NUM_STAGES;
 static constexpr int kNumTuple = NUM_TUPLE;
 static constexpr int kArrayLength = ARRAY_LENGTH;
+static constexpr int kTupleSize = TUPLE_SIZE;
+static constexpr int kVariationTile = VARIATION_TILE;
 
 #elif defined(MODE_NOTSYM)
 #if defined(USE_5TUPLE)
 #include "5tuples_notsym.h"
 static inline void read_evs(FILE* fp) { readEvs(fp); }
 static inline int get_updatecount(int s, int t, int idx) { return updatecounts[s][t][idx]; }
+static inline int get_tuple_pos(int t, int k) { return pos[t][k]; }
 static constexpr int kNumStages = NUM_STAGES;
 static constexpr int kNumTuple = NUM_TUPLE;
 static constexpr int kArrayLength = ARRAY_LENGTH;
+static constexpr int kTupleSize = TUPLE_SIZE;
+static constexpr int kVariationTile = VARIATION_TILE;
 #elif defined(USE_4TUPLE) || defined(NT4A)
 #include "4tuples_nosym.h"
 static inline void read_evs(FILE* fp) { readEvs(fp); }
 static inline int get_updatecount(int s, int t, int idx) { return updatecounts[s][t][idx]; }
+static inline int get_tuple_pos(int t, int k) { return pos[t][k]; }
 static constexpr int kNumStages = NUM_STAGES;
 static constexpr int kNumTuple = NUM_TUPLE;
 static constexpr int kArrayLength = ARRAY_LENGTH;
+static constexpr int kTupleSize = TUPLE_SIZE;
+static constexpr int kVariationTile = VARIATION_TILE;
 #else
 #include "6tuples_notsym.h"
 static inline void read_evs(FILE* fp) { NT6_notsym::readEvs(fp); }
 static inline int get_updatecount(int s, int t, int idx) { return NT6_notsym::updatecounts[s][t][idx]; }
+static inline int get_tuple_pos(int t, int k) { return NT6_notsym::pos[t][k]; }
 static constexpr int kNumStages = NT6_notsym::NUM_STAGES;
 static constexpr int kNumTuple = NT6_notsym::NUM_TUPLE;
 static constexpr int kArrayLength = NT6_notsym::ARRAY_LENGTH;
+static constexpr int kTupleSize = NT6_notsym::TUPLE_SIZE;
+static constexpr int kVariationTile = NT6_notsym::VARIATION_TILE;
 #endif
 
 #elif defined(MODE_ROTATE_NOTSYM)
 #include "tuples_notsym_rotate.h"
 static inline void read_evs(FILE* fp) { readEvs(fp); }
 static inline int get_updatecount(int s, int t, int idx) { return updatecounts[s][t][idx]; }
+static inline int get_tuple_pos(int t, int k) { return pos[t][k]; }
 static constexpr int kNumStages = NUM_STAGES;
 static constexpr int kNumTuple = NUM_TUPLE;
 static constexpr int kArrayLength = ARRAY_LENGTH;
+static constexpr int kTupleSize = TUPLE_SIZE;
+static constexpr int kVariationTile = VARIATION_TILE;
 
 #elif defined(MODE_ROT180_NOTSYM)
 #include "tuples_notsym_rot180.h"
 static inline void read_evs(FILE* fp) { readEvs(fp); }
 static inline int get_updatecount(int s, int t, int idx) { return updatecounts[s][t][idx]; }
+static inline int get_tuple_pos(int t, int k) { return pos[t][k]; }
 static constexpr int kNumStages = NUM_STAGES;
 static constexpr int kNumTuple = NUM_TUPLE;
 static constexpr int kArrayLength = ARRAY_LENGTH;
+static constexpr int kTupleSize = TUPLE_SIZE;
+static constexpr int kVariationTile = VARIATION_TILE;
 
 #elif defined(MODE_DIAG_NOTSYM)
 #include "tuples_notsym_diag.h"
 static inline void read_evs(FILE* fp) { readEvs(fp); }
 static inline int get_updatecount(int s, int t, int idx) { return updatecounts[s][t][idx]; }
+static inline int get_tuple_pos(int t, int k) { return pos[t][k]; }
 static constexpr int kNumStages = NUM_STAGES;
 static constexpr int kNumTuple = NUM_TUPLE;
 static constexpr int kArrayLength = ARRAY_LENGTH;
+static constexpr int kTupleSize = TUPLE_SIZE;
+static constexpr int kVariationTile = VARIATION_TILE;
 
 #else
 #error "Please define one mode macro (MODE_SYM_LIKE / MODE_NOTSYM / MODE_ROTATE_NOTSYM / MODE_ROT180_NOTSYM / MODE_DIAG_NOTSYM)."
@@ -89,6 +111,34 @@ struct Cell {
   int index;
   int count;
 };
+
+static std::vector<int> decode_index_digits(int index) {
+  std::vector<int> digits(kTupleSize, 0);
+  int x = index;
+  for (int k = kTupleSize - 1; k >= 0; --k) {
+    digits[k] = x % kVariationTile;
+    x /= kVariationTile;
+  }
+  return digits;
+}
+
+static std::vector<int> digits_to_tile_values(const std::vector<int>& digits) {
+  std::vector<int> vals;
+  vals.reserve(digits.size());
+  for (int e : digits) {
+    vals.push_back((e == 0) ? 0 : (1 << e));
+  }
+  return vals;
+}
+
+static std::string join_vec(const std::vector<int>& v) {
+  std::ostringstream oss;
+  for (size_t i = 0; i < v.size(); ++i) {
+    if (i) oss << " ";
+    oss << v[i];
+  }
+  return oss.str();
+}
 
 static void usage(const char* prog) {
   std::fprintf(stderr, "Usage: %s <dat_path> <table_stage|all> [top_k]\n", prog);
@@ -170,9 +220,23 @@ int main(int argc, char* argv[]) {
   }
   std::printf("shape: NUM_TUPLE=%d ARRAY_LENGTH=%d\n", kNumTuple, kArrayLength);
   std::printf("top_k: %d\n\n", top_k);
-  std::printf("rank,tuple_id,index,updatecount\n");
+  std::printf("rank,tuple_id,index,updatecount,tuple_pos,tuple_exp,tuple_tile\n");
   for (size_t i = 0; i < best.size(); ++i) {
-    std::printf("%zu,%d,%d,%d\n", i + 1, best[i].tuple_id, best[i].index, best[i].count);
+    const int t = best[i].tuple_id;
+    std::vector<int> tuple_pos;
+    tuple_pos.reserve(kTupleSize);
+    for (int k = 0; k < kTupleSize; ++k) {
+      tuple_pos.push_back(get_tuple_pos(t, k));
+    }
+    const std::vector<int> exps = decode_index_digits(best[i].index);
+    const std::vector<int> tiles = digits_to_tile_values(exps);
+    const std::string pos_s = join_vec(tuple_pos);
+    const std::string exp_s = join_vec(exps);
+    const std::string tile_s = join_vec(tiles);
+
+    std::printf("%zu,%d,%d,%d,\"%s\",\"%s\",\"%s\"\n",
+                i + 1, t, best[i].index, best[i].count,
+                pos_s.c_str(), exp_s.c_str(), tile_s.c_str());
   }
 
   return 0;
