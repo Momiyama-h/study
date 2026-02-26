@@ -85,7 +85,12 @@ def plot_scatter_symdiff(
         run_name, tuple_v, sym, seed, stage = _extract_info(pd)
         if tuple_v is None or sym is None or seed is None:
             continue
-        if sym not in ("sym", "notsym"):
+        # map extended mode names into canonical sym/notsym buckets
+        if sym in ("sym", "rotate", "rot180", "diag"):
+            sym = "sym"
+        elif sym in ("notsym", "rotate_notsym", "rot180_notsym", "diag_notsym"):
+            sym = "notsym"
+        else:
             continue
         key = (run_name, tuple_v, seed, stage)
         grouped.setdefault(key, {})[sym] = pd
